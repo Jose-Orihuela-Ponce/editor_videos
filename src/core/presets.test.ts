@@ -1,0 +1,31 @@
+import { beforeEach, expect, it } from 'vitest';
+import { createEmptyProject, projectContent } from './project';
+import { appendMedia } from './timeline';
+import { addVisualLayer, updateOverlay } from './layers';
+import { updateClipSettings } from './clipSettings';
+import { applyStyle, applyStyleToText, captureStyle } from './presets';
+import { useProjectStore } from './store';
+import type { Media } from './project';
+const video: Media = {id:'v',kind:'video',path:'video.mp4',duration:8,w:640,h:360,fps:24,hasAudio:true};
+beforeEach(() => useProjectStore.getState().clear());
+it('guarda y aplica video y textos como una acción, preservando cortes, tiempos y contenido existente', () => {
+ const p=createEmptyProject('Prueba','horizontal');appendMedia(p,[video,video]); const [a,b]=p.main;
+ updateClipSettings(p,a.id,{posX:80,stretchX:1.2}); const id=addVisualLayer(p,1);updateOverlay(p,id,{text:'Hola',posX:150,posY:-40,scale:1.3,duration:3});
+ const style=captureStyle(p,a);expect(style.texts).toHaveLength(1);expect(style.texts![0].text).toBe('Hola');
+ const store=useProjectStore.getState;store().load(p);const original=projectContent(p);
+ store().edit(draft=>applyStyle(draft,b.id,style));const result=store().project!;expect(result.main[1].srcEnd).toBe(8);expect(result.main[1].posX).toBe(80);const text=result.overlays.find(o=>o.id!==id)!;expect(text.text).toBe('Hola');expect(text.start).toBe(9);expect(text.duration).toBe(3);expect(text.posY).toBe(-40);expect(text.scale).toBe(1.3);
+ store().undo();expect(projectContent(store().project!)).toBe(original);store().redo();expect(store().project!.overlays).toHaveLength(2);
+ store().edit(draft=>applyStyleToText(draft,id,style.texts![0]));expect(store().project!.overlays.find(o=>o.id===id)?.start).toBe(1);
+});
+it('conserva velocidad y volumen en el estilo y al aplicarlo, sin modificar los cortes', () => {
+ const p=createEmptyProject('Velocidad y volumen','horizontal'); appendMedia(p,[video,video]);
+ const [first,second]=p.main;
+ updateClipSettings(p,first.id,{speed:2,volume:1.75});
+ const style=JSON.parse(JSON.stringify(captureStyle(p,first)));
+ expect(style.clip.speed).toBe(2);expect(style.clip.volume).toBe(1.75);
+ const store=useProjectStore.getState;store().load(p);
+ store().edit(draft=>applyStyle(draft,second.id,style));
+ expect(store().project!.main[1]).toMatchObject({speed:2,volume:1.75,srcStart:0,srcEnd:8});
+ store().undo();expect(store().project!.main[1]).toMatchObject({speed:1,volume:1});
+ store().redo();expect(store().project!.main[1]).toMatchObject({speed:2,volume:1.75});
+});

@@ -1,0 +1,7 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "main-window",
+  "description": "Ventana principal: diálogo para abrir proyectos y ciclo de cierre.",
+  "windows": ["main"],
+  "permissions": ["core:default", "dialog:allow-open", "dialog:allow-message", "dialog:allow-ask", "core:window:allow-close", "core:window:allow-destroy"]
+}

@@ -1,0 +1,17 @@
+{
+  "target": "x86_64-pc-windows-msvc",
+  "binaries": [
+    {
+      "name": "ffmpeg",
+      "version": "ffmpeg version 8.0.1-full_build-www.gyan.dev Copyright (c) 2000-2025 the FFmpeg developers",
+      "sha256": "74db6c184a03dba2bdfe23e1a1f41cf5a8385bc1de6a7a1b26db1dc541abef93",
+      "bytes": 211091968
+    },
+    {
+      "name": "ffprobe",
+      "version": "ffprobe version 8.0.1-full_build-www.gyan.dev Copyright (c) 2007-2025 the FFmpeg developers",
+      "sha256": "55bb6c6289367ae2383efa86b26bf2596f8adb72ac747360eb13df162354161c",
+      "bytes": 210895360
+    }
+  ]
+}

@@ -1,0 +1,10 @@
+import { mkdir } from 'node:fs/promises';
+import { execFileSync } from 'node:child_process';
+import { resolve, join } from 'node:path';
+const folder = resolve('.local/fixtures');
+await mkdir(folder, { recursive: true });
+const ffmpeg = resolve('src-tauri/binaries/ffmpeg-x86_64-pc-windows-msvc.exe');
+const render = args => execFileSync(ffmpeg, ['-v', 'error', '-nostdin', '-y', ...args], { windowsHide: true, stdio: 'inherit' });
+render(['-f', 'lavfi', '-i', 'testsrc2=size=640x360:rate=24:duration=4', '-f', 'lavfi', '-i', 'sine=frequency=440:sample_rate=48000:duration=4', '-c:v', 'libx264', '-preset', 'veryfast', '-pix_fmt', 'yuv420p', '-c:a', 'aac', '-shortest', join(folder, '01-horizontal-con-audio.mp4')]);
+render(['-f', 'lavfi', '-i', 'testsrc2=size=360x640:rate=30:duration=3', '-c:v', 'libx264', '-preset', 'veryfast', '-pix_fmt', 'yuv420p', join(folder, '02-vertical-sin-audio.mp4')]);
+process.stdout.write(`Videos de prueba: ${folder}\n`);
