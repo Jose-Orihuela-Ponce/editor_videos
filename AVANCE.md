@@ -1,6 +1,6 @@
 # Avance
 
-Actualizado: 30 de octubre de 2026.
+Actualizado: 2 de noviembre de 2026.
 
 ## Estado
 
@@ -9,7 +9,8 @@ Actualizado: 30 de octubre de 2026.
 - Pantalla de inicio simplificada: se retiraron la franja «Biblioteca local» y el texto de bienvenida; «Abrir proyecto» permanece junto a «Nuevo proyecto». El instalador existente es anterior a este cambio.
 - Panel del video organizado en apartados desplegables: escala y posición, espejo, recorte, velocidad y volumen; configuración del proyecto separada. El instalador existente aún no incluye estos cambios.
 - Paneles de texto y audio organizados en apartados desplegables; también se ordenaron los controles compartidos de imagen y video superpuesto.
-- El repositorio conserva el commit inicial del plan. Los archivos locales de pruebas y el instalador no se versionan.
+- GitHub: `origin` apunta a `https://github.com/Jose-Orihuela-Ponce/editor_videos.git`, rama `main`. Usuario autorizó subir el editor (`257585e`) y la preparación del repositorio. Preparados `.gitignore`, `.gitattributes`, workflow Windows y guía para compilar en otra PC con los mismos sidecars, y trasladar datos por separado. No se incluyen pruebas locales, binarios ni instaladores. Verificar sincronización con `git ls-remote origin refs/heads/main` y `git status -sb` al retomar.
+- Acceso directo `Escritorio/Editor de video.lnk` apunta a la compilación de escritorio actual en `src-tauri/target/release/`, junto a FFmpeg y FFprobe. Si se borra esa carpeta, hay que compilar y crear el acceso de nuevo; no es una instalación.
 
 - Editor Tauri/React local en español, tema azul, horizontal 16:9 y vertical. Pistas simultáneas, texto Montserrat, imanes y guías, historial, respaldo, ajustes y exportación MP4/MP3. Exportación predeterminada: `C:/Users/freud/Videos/ediciones/`.
 - Estilo conjunto por orientación: botones superiores para guardar/aplicar video y textos con contenido, formato, posición, tiempos, velocidad y volumen. Videos superpuestos no admiten aún todas las transformaciones de la pista principal. Consultar el plan y README para detalles.
@@ -18,6 +19,7 @@ Actualizado: 30 de octubre de 2026.
 
 ## Comprobado
 
+- Preparación GitHub (2 de noviembre): remoto consultado con `git ls-remote`; exclusiones verificadas y ningún archivo versionado coincide con ellas. Revisión de patrones comunes de credenciales sin hallazgos. Pasaron 44 pruebas de interfaz/exportación, 10 de Rust (persistencia incluida) y compilación web. Workflow pendiente de ejecutarse en GitHub al subirlo; no se recompiló el instalador ni se repitió la prueba visual nativa.
 - `npm test`: 44 pruebas; `cargo test --offline --manifest-path src-tauri/Cargo.toml --lib`: 10 pruebas; compilaciones web y Rust aprobadas.
 - Tauri aislado: detectar un archivo faltante, relocalizar, guardar/reabrir y deshacer/rehacer; proxy H.264 con audio; video 2560×1440 reproduce mediante proxy y exporta desde el original. Un error de reproducción simulado generó proxy y permitió reproducir/exportar. Evidencias `.local/check-missing-ui-native.mjs`, `.local/check-stage6-native.mjs`, `.local/check-proxy-playback.mjs`, `.local/check-proxy-fallback.mjs`.
 - Interfaz web: Espacio, dividir, deshacer/rehacer y aviso de cambios sin guardar (`.local/check-shortcuts.mjs`). Versión compilada de producción abrió la interfaz, detectó FFmpeg/FFprobe y generó proxy (`.local/check-release-stage6.mjs`). NSIS generado correctamente; no se ejecutó el instalador ni se verificó una instalación completa.

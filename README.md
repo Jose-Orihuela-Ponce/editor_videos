@@ -4,9 +4,37 @@ Editor local de video para Windows. Estado y siguiente paso: **[AVANCE.md](AVANC
 
 Implementadas las etapas 1 (base), 2 (edición básica), 3 (transformaciones), 4 (capas), 5 (estilos) y 6 (pulido).
 
+## Repositorio y GitHub
+
+Remoto `origin`: [Jose-Orihuela-Ponce/editor_videos](https://github.com/Jose-Orihuela-Ponce/editor_videos). Rama principal: `main`.
+
+Para obtener el proyecto en otro equipo:
+
+```powershell
+git clone https://github.com/Jose-Orihuela-Ponce/editor_videos.git
+cd editor_videos
+```
+
+Después sigue los requisitos y comandos de desarrollo de abajo. Git conserva ambos archivos de bloqueo y los recursos de la aplicación. El `.gitignore` excluye dependencias, compilaciones, instaladores, ejecutables de FFmpeg/FFprobe, pruebas locales en `.local/` y archivos `.env` privados. Guarda los medios de prueba y las exportaciones dentro de `.local/` si trabajas en el repositorio. No añadas credenciales ni archivos personales con `git add -f`.
+
+Para revisar y publicar cambios preparados:
+
+```powershell
+git status --short
+git diff
+git add .gitignore .gitattributes .github/workflows/check.yml README.md AVANCE.md
+git diff --cached
+git commit -m "Preparar repositorio para GitHub"
+git push origin main
+```
+
+GitHub Actions ejecuta pruebas de interfaz y exportación con FFmpeg, compilación web y pruebas de Rust en Windows. No genera ni publica instaladores. La comprobación en GitHub se verifica después de subir el workflow; no sustituye las pruebas de la aplicación Tauri.
+
+El código propio no tiene todavía una licencia de distribución declarada. Montserrat conserva su licencia en `public/fonts/OFL.txt`; antes de distribuir instaladores con FFmpeg, revisa también las condiciones de la compilación utilizada (la actual incluye componentes GPL).
+
 ## Abrir en desarrollo
 
-Requisitos: Windows x64, Node.js 22.12+ o 24+, Rust con herramientas de compilación C++ de Microsoft y WebView2. Las dependencias están fijadas en `package-lock.json` y `src-tauri/Cargo.lock`.
+Requisitos: Windows 10/11 x64, Node.js 22.12+ o 24+, Rust (destino `x86_64-pc-windows-msvc`) con herramientas de compilación C++ de Microsoft y Windows SDK, WebView2 y FFmpeg/FFprobe disponibles en el PATH. Las dependencias están fijadas en `package-lock.json` y `src-tauri/Cargo.lock`.
 
 ```powershell
 npm ci
@@ -15,6 +43,12 @@ npm run desktop
 ```
 
 `sidecars` copia FFmpeg y FFprobe desde el PATH a `src-tauri/binaries/`, con los nombres exigidos por Tauri. También puedes indicar `FFMPEG_BIN` y `FFPROBE_BIN`. Se registra versión y SHA-256 en `SOURCES.json`; los ejecutables se excluyen de Git. En este equipo los binarios completos ocupan aproximadamente 402 MB en total.
+
+Para conservar los mismos códecs que la versión local, utiliza la compilación completa de FFmpeg 8.0.1 de Gyan indicada en `src-tauri/binaries/SOURCES.json` (incluye libx264 y libmp3lame). Puedes copiar los dos ejecutables de `src-tauri/binaries/` de este equipo al mismo directorio del otro equipo; en ese caso no hace falta ejecutar `npm run sidecars`. Comprueba sus SHA-256 contra el manifiesto con `Get-FileHash -Algorithm SHA256`. La aceleración de exportación dependerá de la GPU y los controladores del otro equipo; existe respaldo por CPU.
+
+Para una versión compilada, prepara las dependencias anteriores y ejecuta `npx tauri build --bundles nsis`. Instala el archivo generado en `src-tauri/target/release/bundle/nsis/`; incluye FFmpeg y FFprobe. El código descargado de GitHub requiere estos pasos de compilación: el repositorio no contiene un instalador listo para ejecutar.
+
+Tus proyectos y estilos son independientes del código: para trasladarlos, copia `Documentos/Editor/` y los medios originales al otro equipo. Si cambian las rutas, usa **Localizar** y vuelve a guardar. Copia también tus exportaciones si las necesitas; GitHub no almacena esos datos personales.
 
 ## Instalador de Windows
 

@@ -1,11 +1,35 @@
+# Dependencias y compilaciones
 node_modules/
 dist/
 src-tauri/target/
 src-tauri/binaries/*.exe
-.local/
 *.log
 *.tsbuildinfo
 src-tauri/gen/
 src-tauri/icons/android/
 src-tauri/icons/ios/
 src-tauri/icons/*.icns
+
+# Datos y pruebas locales (no incluir originales ni exportaciones)
+.local/
+coverage/
+playwright-report/
+test-results/
+
+# Variables privadas y credenciales locales
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+
+# Archivos del sistema y del editor de código
+.DS_Store
+Thumbs.db
+Desktop.ini
+.idea/
+.vscode/
+*.swp
+*.swo
