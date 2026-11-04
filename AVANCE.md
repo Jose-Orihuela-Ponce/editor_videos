@@ -1,6 +1,6 @@
 # Avance
 
-Actualizado: 2 de noviembre de 2026.
+Actualizado: 3 de noviembre de 2026.
 
 ## Estado
 
@@ -19,11 +19,14 @@ Actualizado: 2 de noviembre de 2026.
 
 ## Comprobado
 
+- Contexto revisado (3 de noviembre): plan, README y flujos de interfaz, estado/historial, reproducción, proxies, persistencia y exportación. Sesión de lectura, sin cambios funcionales ni nuevas ejecuciones de pruebas.
 - Preparación GitHub (2 de noviembre): remoto consultado con `git ls-remote`; exclusiones verificadas y ningún archivo versionado coincide con ellas. Revisión de patrones comunes de credenciales sin hallazgos. Pasaron 44 pruebas de interfaz/exportación, 10 de Rust (persistencia incluida) y compilación web. Workflow pendiente de ejecutarse en GitHub al subirlo; no se recompiló el instalador ni se repitió la prueba visual nativa.
 - `npm test`: 44 pruebas; `cargo test --offline --manifest-path src-tauri/Cargo.toml --lib`: 10 pruebas; compilaciones web y Rust aprobadas.
 - Tauri aislado: detectar un archivo faltante, relocalizar, guardar/reabrir y deshacer/rehacer; proxy H.264 con audio; video 2560×1440 reproduce mediante proxy y exporta desde el original. Un error de reproducción simulado generó proxy y permitió reproducir/exportar. Evidencias `.local/check-missing-ui-native.mjs`, `.local/check-stage6-native.mjs`, `.local/check-proxy-playback.mjs`, `.local/check-proxy-fallback.mjs`.
 - Interfaz web: Espacio, dividir, deshacer/rehacer y aviso de cambios sin guardar (`.local/check-shortcuts.mjs`). Versión compilada de producción abrió la interfaz, detectó FFmpeg/FFprobe y generó proxy (`.local/check-release-stage6.mjs`). NSIS generado correctamente; no se ejecutó el instalador ni se verificó una instalación completa.
 
 ## Retomar aquí
+
+Nueva ampliación autorizada: modo automático desde el inicio de la app, exclusivamente para enlaces de YouTube: enlace → descarga 1080p/720p → estilo guardado → MP4 final. Reutilizar el motor del editor y su renderizado de textos, sin abrir la interfaz de edición. Base documental: `Flujo automatico de enlace a video editado.md`; ajustar al alcance acordado antes de implementar. El usuario pidió primero un commit del estado actual. No hay cambios funcionales del modo automático; es independiente de la etapa 7 (Whisper).
 
 Ver `README.md` y `Editor de video ligero plan del proyecto.md`. La vista web no accede al disco; pruebas con `EDITOR_DATA_DIR` y salida explícita dentro de `.local/`. Pendiente confirmar sentido de Y con el usuario y medir rendimiento largo/4K. El proyecto aún no copia automáticamente los originales a su carpeta.
