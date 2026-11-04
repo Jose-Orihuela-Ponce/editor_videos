@@ -2,7 +2,7 @@
 
 Fecha: 3 de noviembre de 2026.
 
-Estado: especificación para una nueva ampliación. Este documento no autoriza ni inicia su implementación. Las etapas 1–6 del editor están implementadas; este flujo es independiente de la etapa 7 opcional de Whisper. Antes de programarlo se debe incorporar al plan y autorizar su alcance.
+Estado: ampliación autorizada el 3 de noviembre de 2026 e incorporada al plan del proyecto. Se implementa dentro de la app existente, con selector Editor manual / Modo automático en el inicio, exclusivamente para videos individuales de YouTube. Comparte el motor de estilos y exportación del editor; no requiere un proyecto independiente. Este flujo es independiente de la etapa 7 opcional de Whisper.
 
 ## Objetivo
 
@@ -25,7 +25,7 @@ El resultado entregado debe ser el video final procesado, con los cambios visibl
 
 ## Calidad de descarga y exportación
 
-Propuesta inicial, pendiente de confirmar al implementar:
+Reglas adoptadas:
 
 - Calidad preferida predeterminada: 1080p; si no está disponible, usar 720p.
 - Permitir configurar preferencia de 720p para priorizar menor tamaño y tiempo.
@@ -34,7 +34,7 @@ Propuesta inicial, pendiente de confirmar al implementar:
 - Si el proveedor entrega video y audio separados, combinarlos antes de procesar la edición.
 - Distinguir calidad descargada de resolución exportada. Como salida predeterminada se propone la opción «Original» del editor, adaptada a la orientación y sin aumento de resolución, conservando sus reglas de FPS y codificación.
 
-La disponibilidad y la interpretación de 720p/1080p para las fuentes elegidas, incluidos videos verticales, deben definirse durante la integración del descargador.
+La resolución de descarga se mide por el lado menor: 1280×720 y 720×1280 corresponden a 720p. Se usan las dimensiones reales anunciadas por YouTube y se verifican con FFprobe.
 
 ## Reutilización del estilo actual
 
@@ -73,7 +73,7 @@ No duplicar por separado las fórmulas de encuadre, velocidad y audio si pueden 
 
 ## Ejecución y archivos
 
-La primera versión propuesta procesa un enlace por ejecución. La recepción puede exponerse mediante un comando o una entrada sencilla; el canal concreto queda pendiente. No se presupone integración con mensajería, servidor o servicio externo.
+La primera versión procesa un enlace por trabajo mediante una pantalla en el inicio de la app. Los campos son enlace de YouTube, orientación, calidad de descarga y carpeta de salida; el estilo guardado se elige por orientación. Orientación, calidad y carpeta se recuerdan localmente. No incluye ejecución por script ni integración con mensajería o servidor.
 
 Cada trabajo debe tener un identificador y una carpeta temporal independiente. Registrar las etapas «Descargando», «Preparando estilo», «Exportando», «Completado», «Error» y «Cancelado», con progreso cuando esté disponible.
 
@@ -81,7 +81,7 @@ La exportación debe conservar el mecanismo de salida temporal y publicación fi
 
 La carpeta de salida predeterminada puede ser `Videos/ediciones/`, como en el editor, con opción de configurarla. Definir explícitamente si se conserva la descarga original; no borrarla por defecto sin una política configurada. Los archivos parciales del trabajo sí deben limpiarse al cancelar o fallar.
 
-Como resultado del trabajo, registrar al menos el enlace de origen, calidad descargada, orientación, instantánea del estilo, parámetros efectivos de salida, estado y ruta del MP4. Los fallos deben indicar la etapa afectada y no marcar un archivo incompleto como resultado final.
+La descarga original y `descarga.json` con el enlace normalizado, título y datos efectivos del medio se conservan en `Editor/Automaticos/<id>/`. El estilo se toma como instantánea en memoria al comenzar. La pantalla muestra el estado y la ruta del MP4 final. El historial persistente de trabajos y el archivo de sus estilos quedan como mejora futura. Los fallos deben indicar la etapa afectada y no marcar un archivo incompleto como resultado final.
 
 Si falta un estilo válido con ajustes de video, detener el trabajo con un mensaje claro. No entregar una exportación sin estilo como si se hubiera completado correctamente.
 
@@ -95,13 +95,14 @@ Si falta un estilo válido con ajustes de video, detener el trabajo con un mensa
 6. Verificar que guardar y volver a cargar el estilo conserva los ajustes; si se modifica persistencia o historial del editor, ejecutar también sus comprobaciones correspondientes.
 7. Confirmar que el editor de escritorio mantiene su flujo actual de guardar/aplicar estilo y exportar. Una prueba de la vista web no sustituye una comprobación de Tauri.
 
-## Decisiones pendientes antes de programar
+## Alcance confirmado y mejoras futuras
 
-- Fuentes de enlaces que debe soportar la primera versión y mecanismo para recibirlos.
-- Confirmar la preferencia de descarga y la regla para fuentes sin 720p/1080p.
-- Elegir cómo se configura la orientación y cómo se valida el formato estándar de entrada.
-- Confirmar si los textos mantienen su contenido fijo y tiempos actuales o requieren cambios por video.
-- Definir conservación de originales y si interesa guardar también un proyecto editable; el MP4 final es obligatorio.
+- Solo YouTube; recepción por pantalla automática dentro de la app.
+- 1080p con alternativa 720p, o solo 720p; error si no está disponible ninguna calidad admitida.
+- Orientación elegida por el usuario; FFprobe verifica las dimensiones y la duración descargadas.
+- Textos fijos y tiempos actuales del estilo, limitados a la duración final del clip.
+- Conservar originales; no guardar automáticamente proyectos en la biblioteca manual.
+- Futuro: ejecución por script, lotes, textos variables e historial persistente de trabajos.
 
 ## Indicación para la futura implementación
 

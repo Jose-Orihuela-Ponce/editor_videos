@@ -1,3 +1,4 @@
+mod automatic;
 mod export;
 mod media;
 mod model;
@@ -16,6 +17,74 @@ use tauri::{Emitter, Manager};
 #[tauri::command]
 async fn get_library(repo: tauri::State<'_, Repository>) -> Result<Library, String> {
     repo.library()
+}
+
+#[tauri::command]
+async fn download_youtube(
+    url: String,
+    quality: String,
+    job_id: String,
+    repo: tauri::State<'_, Repository>,
+    state: tauri::State<'_, export::ExportState>,
+    app: tauri::AppHandle,
+) -> Result<automatic::DownloadResult, String> {
+    let url = automatic::youtube_url(&url)?;
+    let root = repo.root.clone();
+    let downloader = media::tool_path(&app, "yt-dlp")?;
+    let node = media::tool_path(&app, "node")?;
+    let ffmpeg = media::tool_path(&app, "ffmpeg")?;
+    let ffprobe = media::tool_path(&app, "ffprobe")?;
+    let cancel = state.reserve(&job_id)?;
+    let result = tauri::async_runtime::spawn_blocking(move || {
+        automatic::download(
+            &root,
+            &downloader,
+            &node,
+            &ffmpeg,
+            &ffprobe,
+            &url,
+            &quality,
+            &job_id,
+            &cancel,
+            |progress| {
+                let _ = app.emit("automatic-progress", progress);
+            },
+        )
+    })
+    .await
+    .map_err(|e| e.to_string());
+    state.finish();
+    result?
+}
+
+#[tauri::command]
+async fn get_automatic_tools(app: tauri::AppHandle) -> Vec<ToolStatus> {
+    tauri::async_runtime::spawn_blocking(move || {
+        ["yt-dlp", "node"].iter().map(|name| {
+            let result = media::tool_path(&app, name).and_then(|path| {
+                let output = media::command(&path).arg("--version").output().map_err(|e| e.to_string())?;
+                if !output.status.success() { return Err(format!("No se pudo ejecutar {name}.")); }
+                Ok(String::from_utf8_lossy(&output.stdout).trim().to_string())
+            });
+            ToolStatus {
+                name: name.to_string(), available: result.is_ok(),
+                version: result.unwrap_or_else(|_| format!("El motor de descarga no está disponible ({name}). Reinstala la versión completa de la aplicación.")),
+            }
+        }).collect()
+    }).await.unwrap_or_default()
+}
+
+#[tauri::command]
+fn reveal_automatic_output(path: String) -> Result<(), String> {
+    let path = media::local_path(Path::new(&path))?;
+    if path.extension().and_then(|s| s.to_str()) != Some("mp4") {
+        return Err("Selecciona un video MP4 exportado.".into());
+    }
+    media::command(Path::new("explorer.exe"))
+        .arg(format!("/select,{}", path.display()))
+        .spawn()
+        .map_err(|e| e.to_string())?;
+    Ok(())
 }
 
 #[tauri::command]
@@ -252,7 +321,10 @@ pub fn run() {
             get_tools,
             import_media,
             export_project,
-            cancel_export
+            cancel_export,
+            download_youtube,
+            get_automatic_tools,
+            reveal_automatic_output
         ])
         .run(tauri::generate_context!())
         .expect("No se pudo iniciar Editor");

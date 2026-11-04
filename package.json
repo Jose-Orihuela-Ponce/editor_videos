@@ -11,7 +11,8 @@
     "test:media": "node scripts/create-test-media.mjs",
     "tauri": "tauri",
     "desktop": "tauri dev",
-    "sidecars": "node scripts/prepare-sidecars.mjs"
+    "sidecars": "node scripts/prepare-sidecars.mjs",
+    "automatic:setup": "node scripts/prepare-automatic.mjs"
   },
   "dependencies": {
     "@tauri-apps/api": "~2.11.0",

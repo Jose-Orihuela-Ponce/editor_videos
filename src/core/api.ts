@@ -5,9 +5,13 @@ import type { Library, Orientation, Project, ProjectDocument, ToolStatus } from 
 import type { Media } from './project';
 import type { Preset } from './presets';
 import type { ExportOptions, ExportResult, RenderPlan } from './export';
+import type { DownloadQuality, DownloadResult } from './automatic';
 
 export const desktop = isTauri();
 export const api = {
+  automaticTools: (): Promise<ToolStatus[]> => desktop ? invoke('get_automatic_tools') : Promise.resolve([]),
+  downloadYoutube: (url: string, quality: DownloadQuality, jobId: string): Promise<DownloadResult> => invoke('download_youtube', { url, quality, jobId }),
+  revealAutomatic: (path: string): Promise<void> => invoke('reveal_automatic_output', { path }),
   loadPreset: (orientation: Orientation): Promise<Preset> => invoke('load_preset', { orientation }),
   savePreset: (orientation: Orientation, preset: Preset): Promise<Preset> => invoke('save_preset', { orientation, preset }),
   library: (): Promise<Library> => desktop ? invoke('get_library') : Promise.resolve({ baseDir: '', projects: [], warnings: [] }),

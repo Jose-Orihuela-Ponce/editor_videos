@@ -1,0 +1,18 @@
+{
+  "target": "x86_64-pc-windows-msvc",
+  "binaries": [
+    {
+      "name": "yt-dlp",
+      "version": "2026.10.26",
+      "source": "https://github.com/yt-dlp/yt-dlp/releases/tag/2026.10.26",
+      "sha256": "f5389d3698ecde4ef06f4e6b1ce0294fe9ac1396228c8990b8d3416d6d177a7d",
+      "bytes": 23575744
+    },
+    {
+      "name": "node",
+      "version": "v24.22.0",
+      "source": "https://nodejs.org/dist/v24.22.0/",
+      "sha256": "ba93f9a70bd86fce3ebbb39ec758501458453467aa92a34a0a3602d1e3fc2b9c"
+    }
+  ]
+}

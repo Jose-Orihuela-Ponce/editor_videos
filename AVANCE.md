@@ -4,29 +4,25 @@ Actualizado: 3 de noviembre de 2026.
 
 ## Estado
 
-**Etapas 1 a 6 implementadas.** La etapa 7 del plan (subtítulos con Whisper) es futura y opcional. Instalador generado: `src-tauri/target/release/bundle/nsis/Editor_0.1.0_x64-setup.exe`; no se instaló en el equipo.
-
-- Pantalla de inicio simplificada: se retiraron la franja «Biblioteca local» y el texto de bienvenida; «Abrir proyecto» permanece junto a «Nuevo proyecto». El instalador existente es anterior a este cambio.
-- Panel del video organizado en apartados desplegables: escala y posición, espejo, recorte, velocidad y volumen; configuración del proyecto separada. El instalador existente aún no incluye estos cambios.
-- Paneles de texto y audio organizados en apartados desplegables; también se ordenaron los controles compartidos de imagen y video superpuesto.
-- GitHub: `origin` apunta a `https://github.com/Jose-Orihuela-Ponce/editor_videos.git`, rama `main`. Subidos el editor (`257585e`) y la preparación (`6055157`); push confirmado el 2 de noviembre. Incluye `.gitignore`, `.gitattributes`, workflow Windows y guía para compilar en otra PC con los mismos sidecars, y trasladar datos por separado. No se incluyen pruebas locales, binarios ni instaladores.
-- Acceso directo `Escritorio/Editor de video.lnk` apunta a la compilación de escritorio actual en `src-tauri/target/release/`, junto a FFmpeg y FFprobe. Si se borra esa carpeta, hay que compilar y crear el acceso de nuevo; no es una instalación.
-
-- Editor Tauri/React local en español, tema azul, horizontal 16:9 y vertical. Pistas simultáneas, texto Montserrat, imanes y guías, historial, respaldo, ajustes y exportación MP4/MP3. Exportación predeterminada: `C:/Users/freud/Videos/ediciones/`.
-- Estilo conjunto por orientación: botones superiores para guardar/aplicar video y textos con contenido, formato, posición, tiempos, velocidad y volumen. Videos superpuestos no admiten aún todas las transformaciones de la pista principal. Consultar el plan y README para detalles.
-- Pulido: aviso y botón Localizar para originales faltantes; comprueba tipo, duración y audio, preserva ediciones y admite deshacer/rehacer. Proxies H.264 en `Editor/cache/proxies/` para videos mayores a 1080p o fallo de vista previa; generación en segundo plano de uno en uno y exportación desde originales. Atajos y aviso de cambios sin guardar verificados; Espacio funciona con clip enfocado.
-- Preajustes y proyectos en `Documentos/Editor/`; `EDITOR_DATA_DIR` permite aislar datos. Instalador usa WebView2 y puede necesitar red para instalarlo si falta.
+- Etapas 1–6 implementadas. La etapa 7 (Whisper local) sigue futura y opcional.
+- Ampliación autorizada: **Modo automático** en el inicio, junto al editor manual. Solo videos individuales de YouTube: enlace → descarga 1080p con alternativa 720p, o solo 720p → estilo guardado por orientación → exportación MP4. Comparte aplicación de estilos, textos canvas y exportación; no abre la línea de tiempo ni modifica el proyecto manual.
+- Pantalla con el estilo azul del editor y controles ordenados, sin explicaciones adicionales. Progreso, cancelación y mostrar resultado en carpeta. Recuerda orientación, calidad y carpeta en el almacenamiento local de la interfaz.
+- Descargas originales en `Documentos/Editor/Automaticos/<id>/`, con `descarga.json`; respeta `EDITOR_DATA_DIR`. Cancela y limpia descargas incompletas; conserva originales completos. Exportación predeterminada: `Videos/ediciones/`.
+- Estilos en `Documentos/Editor/Preajustes/`, independientes por orientación. Guardan encuadre, velocidad, volumen y textos con contenido y tiempos relativos. Los videos superpuestos conservan sus limitaciones anteriores.
+- Dependencias del modo automático: yt-dlp y Node incluidos como sidecars, con licencias y manifiesto SHA-256. Preparación: `npm run automatic:setup`; luego compilar. FFmpeg/FFprobe siguen incluidos. Ver README y plan.
+- Editor manual: paneles desplegables, pistas simultáneas, historial, respaldo, relocalización, proxies solo para vista previa, MP4/MP3 y aviso de cambios sin guardar.
+- Ejecutable de escritorio e instalador regenerados con el modo automático. El acceso directo `Escritorio/Editor de video.lnk` apunta a `src-tauri/target/release/`; no es una instalación. Instalador: `src-tauri/target/release/bundle/nsis/Editor_0.1.0_x64-setup.exe` (153.14 MiB); no se instaló en el equipo.
+- GitHub: `origin` = `https://github.com/Jose-Orihuela-Ponce/editor_videos.git`, rama `main`. Punto de retorno previo al modo automático: commit `93f2a40`. Commit y publicación del modo automático autorizados por el usuario.
 
 ## Comprobado
 
-- Contexto revisado (3 de noviembre): plan, README y flujos de interfaz, estado/historial, reproducción, proxies, persistencia y exportación. Sesión de lectura, sin cambios funcionales ni nuevas ejecuciones de pruebas.
-- Preparación GitHub (2 de noviembre): remoto consultado con `git ls-remote`; exclusiones verificadas y ningún archivo versionado coincide con ellas. Revisión de patrones comunes de credenciales sin hallazgos. Pasaron 44 pruebas de interfaz/exportación, 10 de Rust (persistencia incluida) y compilación web. Workflow pendiente de ejecutarse en GitHub al subirlo; no se recompiló el instalador ni se repitió la prueba visual nativa.
-- `npm test`: 44 pruebas; `cargo test --offline --manifest-path src-tauri/Cargo.toml --lib`: 10 pruebas; compilaciones web y Rust aprobadas.
-- Tauri aislado: detectar un archivo faltante, relocalizar, guardar/reabrir y deshacer/rehacer; proxy H.264 con audio; video 2560×1440 reproduce mediante proxy y exporta desde el original. Un error de reproducción simulado generó proxy y permitió reproducir/exportar. Evidencias `.local/check-missing-ui-native.mjs`, `.local/check-stage6-native.mjs`, `.local/check-proxy-playback.mjs`, `.local/check-proxy-fallback.mjs`.
-- Interfaz web: Espacio, dividir, deshacer/rehacer y aviso de cambios sin guardar (`.local/check-shortcuts.mjs`). Versión compilada de producción abrió la interfaz, detectó FFmpeg/FFprobe y generó proxy (`.local/check-release-stage6.mjs`). NSIS generado correctamente; no se ejecutó el instalador ni se verificó una instalación completa.
+- 48 pruebas de TypeScript y 13 de Rust aprobadas; compilación web y ejecutable de escritorio aprobados. Incluyen persistencia, historial, exportación real y selección offline con yt-dlp de 1080p, alternativa 720p, vertical, fuente sin audio y error si no hay calidad admitida.
+- Tauri real, datos aislados: guardar/recargar estilo, rechazar enlaces externos, cancelar descarga con limpieza y procesar un enlace real de YouTube a 720p. Original de 634.624 s → MP4 de 158.656 s con velocidad 4, encuadre, volumen y textos. Los fotogramas comparados coinciden con la exportación manual del mismo original. Evidencia: `.local/check-automatic-native.mjs`, `.local/automatic-native/result.json` y capturas.
+- Verificaciones anteriores de Tauri: relocalizar y guardar/reabrir con deshacer/rehacer; proxies H.264 para 1440p y error de reproducción; exportación desde originales. Evidencias `.local/check-stage6-native.mjs`, `.local/check-proxy-playback.mjs` y `.local/check-proxy-fallback.mjs`.
+- Distribución comprobada en Tauri real: detecta sus cuatro sidecars, carga el estilo guardado, conserva calidad tras recargar y bloquea Procesar si falta el estilo de la orientación elegida. Evidencia: `.local/check-automatic-release.mjs`, `.local/automatic-release/result.json` y captura. NSIS generado; no se ejecutó el instalador ni se verificó una instalación completa. Ventanas de prueba cerradas.
 
 ## Retomar aquí
 
-Nueva ampliación autorizada: modo automático desde el inicio de la app, exclusivamente para enlaces de YouTube: enlace → descarga 1080p/720p → estilo guardado → MP4 final. Reutilizar el motor del editor y su renderizado de textos, sin abrir la interfaz de edición. Base documental: `Flujo automatico de enlace a video editado.md`; ajustar al alcance acordado antes de implementar. El usuario pidió primero un commit del estado actual. No hay cambios funcionales del modo automático; es independiente de la etapa 7 (Whisper).
+Consultar README, plan y `Flujo automatico de enlace a video editado.md`. Fuera del modo automático actual: otros proveedores, cuentas/cookies, lotes, ejecución por script e historial persistente de trabajos. La vista web no accede al disco; comprobar Tauri con `EDITOR_DATA_DIR` y salida explícita dentro de `.local/`.
 
-Ver `README.md` y `Editor de video ligero plan del proyecto.md`. La vista web no accede al disco; pruebas con `EDITOR_DATA_DIR` y salida explícita dentro de `.local/`. Pendiente confirmar sentido de Y con el usuario y medir rendimiento largo/4K. El proyecto aún no copia automáticamente los originales a su carpeta.
+Pendientes anteriores: confirmar sentido de Y con el usuario y medir rendimiento largo/4K. El editor manual todavía referencia los originales y no los copia automáticamente al proyecto.

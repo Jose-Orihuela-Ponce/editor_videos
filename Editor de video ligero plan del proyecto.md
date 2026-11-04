@@ -402,6 +402,16 @@ Las aclaraciones anteriores se implementan dentro de la etapa que las necesita: 
 6. **Pulido.** Localizar medios faltantes con validación y deshacer; proxies H.264 de vista previa para archivos de más de 1080p o con error de reproducción, exportando siempre desde el original; atajos, aviso de cambios sin guardar e instalador NSIS.
 7. **Futuro, opcional.** Subtítulos automáticos con Whisper local.
 
+### Ampliación autorizada: modo automático de YouTube
+
+Autorizada el 3 de noviembre de 2026, independiente de Whisper. En el inicio se elige Editor manual o Modo automático. Este último recibe un enlace de un video individual de YouTube, orientación, calidad (1080p con alternativa 720p, o solo 720p) y carpeta de salida; aplica el estilo guardado por orientación y exporta un MP4 sin entrar a la línea de tiempo.
+
+Reutilizar aplicación de estilos, preparación de textos con canvas y exportación con FFmpeg. No mantener otro motor de edición. Descargar con yt-dlp y un runtime JavaScript incluido; validar enlaces de YouTube en el núcleo, ignorar listas y parámetros ajenos al identificador del video y rechazar directos en curso. No elegir resoluciones inferiores ni aumentar artificialmente la calidad. La resolución se mide por el lado menor, también en vertical.
+
+Conservar los originales descargados en `Editor/Automaticos/<id>/`, separados de Proyectos; limpiar los parciales al cancelar o fallar la descarga. Exportar con la opción Original del editor, con progreso, cancelación y sin sobrescrituras. La pantalla debe usar el estilo visual del editor, controles ordenados y textos mínimos. Recordar orientación, calidad y carpeta en el almacenamiento local de la interfaz. El procesamiento automático no modifica el proyecto manual ni su historial.
+
+Listo cuando: un enlace de YouTube produce un MP4 con el estilo guardado, se verifica cancelación y manejo de errores, y el resultado coincide con exportar el mismo original manualmente. Comprobar la aplicación Tauri real, no solo la vista web. Fuera de esta ampliación: otros proveedores, lotes, cuentas/cookies, subtítulos automáticos y ejecución por script sin la app.
+
 ## 15. Fuera de alcance y pendientes
 
 **Fuera de alcance:** efectos, filtros, transiciones, stickers, plantillas, cuentas, nube, telemetría, edición multicámara, fotogramas clave.

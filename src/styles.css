@@ -134,3 +134,16 @@
 .editing-properties .property-separator { display: none; }
 
 .missing-media{padding:10px 12px;color:#f3c48a;font-size:10px;background:#3a2b24}.missing-media>div{display:flex;align-items:center;gap:5px;margin-top:8px}.missing-media span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1}.missing-media button{padding:5px;font-size:10px}
+
+.mode-selector{display:flex;gap:12px;margin:28px 0}
+.automatic-mode{max-width:720px;padding:28px;border:1px solid #35485b;border-radius:16px;background:#19212a}
+.automatic-heading{display:flex;align-items:center;gap:14px;margin-bottom:24px;color:#82bfff}
+.automatic-heading h1{margin:0;font-size:23px;letter-spacing:-.5px;color:#e8eff7}
+.automatic-mode fieldset{padding:0;margin:0;border:0;min-width:0}
+.automatic-mode .text-input{margin-top:8px}
+.automatic-mode .export-fields{margin-top:18px}
+.automatic-style{font-size:13px;color:#f3c48a;margin:20px 0}
+.automatic-style.ready{color:#9acbb6}
+.automatic-mode .modal-note,.automatic-mode .export-success p{overflow-wrap:anywhere}
+.automatic-mode .inline-error pre{white-space:pre-wrap;overflow-wrap:anywhere}
+.automatic-mode .export-success button{margin-top:12px}

@@ -3,12 +3,12 @@ import { listen } from '@tauri-apps/api/event';
 import { CheckCircle2, FolderOpen } from 'lucide-react';
 import Modal from './Modal';
 import { api } from '../core/api';
-import { buildRenderPlan, exportSize } from '../core/export';
+import { exportSize } from '../core/export';
+import { prepareExport } from '../core/prepareExport';
 import type { ExportOptions, ExportProgress } from '../core/export';
 import type { Project } from '../core/project';
 import { formatTime, projectDuration } from '../core/timeline';
 import { useSession } from '../core/session';
-import { drawText } from '../tools/text/render';
 
 export default function ExportDialog({ project, onClose }: { project: Project; onClose: () => void }) {
   const [options, setOptions] = useState<ExportOptions>({ format: 'mp4', quality: 'original', hardware: true, name: project.name.replace(/[<>:"/\\|?*\x00-\x1f]/g, '_').replace(/[. ]+$/, '') || 'Mi video', folder: null });
@@ -30,17 +30,7 @@ export default function ExportDialog({ project, onClose }: { project: Project; o
     let unlisten: (() => void) | undefined;
     setError(''); setResult(''); setCancelling(false);
     try {
-      const snapshot = structuredClone(project);
-      if (options.format === 'mp4') {
-        await Promise.all(snapshot.overlays.filter(item => item.type === 'text' && item.style).map(item => {
-          const style = item.style!;
-          return document.fonts.load(`${style.italic ? 'italic ' : ''}${style.bold ? 'bold ' : ''}${style.size}px ${JSON.stringify(style.font)}`);
-        }));
-        await document.fonts.ready;
-      }
-      const output = exportSize(snapshot, options.quality), duration = projectDuration(snapshot);
-      const textImages = options.format === 'mp4' ? snapshot.overlays.filter(item => item.type === 'text' && item.start < duration).map(item => ({ id: item.id, data: drawText(item, snapshot.canvas, { w: output.width, h: output.height }).surface.toDataURL('image/png') })) : [];
-      const plan = buildRenderPlan(snapshot, options, textImages);
+      const { snapshot, plan } = await prepareExport(project, options);
       const id = crypto.randomUUID(); setJobId(id); setRunning(true); useSession.setState({ exporting: true });
       setProgress({ jobId: id, percent: 0, stage: 'Preparando', encoder: '' });
       unlisten = await listen<ExportProgress>('export-progress', event => { if (event.payload.jobId === id) setProgress(event.payload); });

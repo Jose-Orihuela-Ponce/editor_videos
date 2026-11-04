@@ -21,7 +21,8 @@
   "bundle": {
     "active": true,
     "targets": ["nsis"],
-    "externalBin": ["binaries/ffmpeg", "binaries/ffprobe"],
+    "externalBin": ["binaries/ffmpeg", "binaries/ffprobe", "binaries/yt-dlp", "binaries/node"],
+    "resources": { "binaries/automatic-licenses/": "licenses/automatic/" },
     "windows": { "webviewInstallMode": { "type": "downloadBootstrapper" } }
   }
 }

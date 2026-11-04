@@ -31,6 +31,8 @@ jobs:
           npm run sidecars
       - name: Comprobar interfaz y exportaciones
         run: npm test
+      - name: Preparar descarga de YouTube
+        run: npm run automatic:setup
       - name: Compilar interfaz
         run: npm run build
       - name: Preparar Rust

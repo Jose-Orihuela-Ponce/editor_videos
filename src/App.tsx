@@ -9,6 +9,7 @@ import { useSession } from './core/session';
 import Editor from './components/Editor';
 import { usePresets } from './core/presets';
 import Modal from './components/Modal';
+import AutomaticMode from './components/AutomaticMode';
 
 function Brand({ compact = false }: { compact?: boolean }) {
   return <div className="brand"><span className="brand-icon"><Clapperboard size={20} strokeWidth={2.2} /></span>{!compact && <span>editor<span className="brand-dot">.</span></span>}</div>;
@@ -31,6 +32,8 @@ export default function App() {
   const [newOrientation, setNewOrientation] = useState<Orientation | null>(null);
   const [newName, setNewName] = useState('Mi video');
   const [busy, setBusy] = useState(false);
+  const [automatic, setAutomatic] = useState(false);
+  const [automaticBusy, setAutomaticBusy] = useState(false);
   const [saving, setSaving] = useState(false);
   const savingRef = useRef(false);
   const [pendingAction, setPendingAction] = useState<(() => void) | null>(null);
@@ -87,7 +90,7 @@ export default function App() {
     let disposed = false;
     let unlisten: (() => void) | undefined;
     void getCurrentWindow().onCloseRequested(event => {
-      if (useSession.getState().exporting) { event.preventDefault(); notify('Cancela la exportación antes de cerrar el editor.', true); return; }
+      if (useSession.getState().exporting) { event.preventDefault(); notify('Cancela el procesamiento antes de cerrar la aplicación.', true); return; }
       if (!hasUnsavedChanges()) return;
       event.preventDefault();
       requestLeave(() => { void getCurrentWindow().destroy(); });
@@ -130,6 +133,8 @@ export default function App() {
         <div className="sidebar-version">EDITOR <span>v0.1</span></div>
       </aside>
       <main className="home-main">
+        <div className="mode-selector" aria-label="Modo de trabajo"><button className={!automatic ? 'primary-button' : 'secondary-button'} disabled={automaticBusy} onClick={() => setAutomatic(false)}>Editor manual</button><button className={automatic ? 'primary-button' : 'secondary-button'} disabled={automaticBusy} onClick={() => setAutomatic(true)}>Modo automático</button></div>
+        {automatic ? <AutomaticMode onBusy={setAutomaticBusy} /> : <>
         <div className="section-label home-actions"><span>NUEVO PROYECTO</span><button className="secondary-button" onClick={() => void chooseProject()} disabled={busy}><FolderOpen size={17} />Abrir proyecto</button></div>
         <section className="format-cards" aria-label="Crear un proyecto">
           {(['horizontal', 'vertical'] as Orientation[]).map(orientation => <button key={orientation} className={`format-card ${orientation}`} onClick={() => { setNewName('Mi video'); setNewOrientation(orientation); }} disabled={busy}>
@@ -141,6 +146,7 @@ export default function App() {
           {loading ? <div className="empty-recent"><span className="loading-ring" /><p>Buscando tus proyectos…</p></div> : libraryError ? <div className="empty-recent error-state"><p>{libraryError}</p><button className="secondary-button" onClick={() => void refreshLibrary()}>Reintentar</button></div> : library.projects.length ? <div className="recent-grid">{library.projects.map(recent => <RecentCard key={recent.filePath} project={recent} disabled={busy} onOpen={() => void openProject(recent.filePath)} />)}</div> : <div className="empty-recent"><div className="empty-icon"><FolderOpen size={28} strokeWidth={1.3} /><span><Plus size={11} /></span></div><h3>Un buen comienzo está en blanco.</h3><p>Crea tu primer proyecto. Lo encontrarás aquí cuando lo guardes.</p></div>}
           {library.warnings.length > 0 && <p className="library-warning">{library.warnings.join(' ')}</p>}
         </section>
+        </>}
         <footer className="home-footer">{engineStatus}<span title={library.baseDir}><HardDrive size={13} />{library.baseDir || 'Archivos en tu equipo'}</span></footer>
       </main>
     </div> : <Editor project={project} saving={saving} onBack={() => requestLeave(() => useProjectStore.getState().clear())} onSave={() => void saveProject()} onNotice={notify} engineStatus={engineStatus} filePath={filePath} />}

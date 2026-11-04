@@ -39,6 +39,7 @@ Requisitos: Windows 10/11 x64, Node.js 22.12+ o 24+, Rust (destino `x86_64-pc-wi
 ```powershell
 npm ci
 npm run sidecars
+npm run automatic:setup
 npm run desktop
 ```
 
@@ -52,7 +53,7 @@ Tus proyectos y estilos son independientes del código: para trasladarlos, copia
 
 ## Instalador de Windows
 
-Hay un instalador NSIS anterior en `src-tauri/target/release/bundle/nsis/Editor_0.1.0_x64-setup.exe`. No incluye los últimos cambios de interfaz y todavía no se ha comprobado una instalación completa. Regénéralo para incorporar el estado actual. La compilación incluye FFmpeg y FFprobe; si falta WebView2, el instalador puede necesitar conexión para obtenerlo.
+Instalador NSIS en `src-tauri/target/release/bundle/nsis/Editor_0.1.0_x64-setup.exe`. La versión actual incluye la interfaz manual y el modo automático, FFmpeg, FFprobe, yt-dlp y Node.js. No se ha ejecutado el instalador ni comprobado una instalación completa; las pruebas nativas se realizan sobre el ejecutable compilado con datos aislados. Si falta WebView2, el instalador puede necesitar conexión para obtenerlo.
 
 Para volver a generarlo en Windows con las dependencias preparadas:
 
@@ -60,7 +61,17 @@ Para volver a generarlo en Windows con las dependencias preparadas:
 npx tauri build --bundles nsis
 ```
 
-## Datos
+## Modo automático de YouTube
+
+En el inicio, selecciona **Modo automático**, pega un enlace de un video de YouTube, elige orientación y calidad, y pulsa **Procesar**. Primero guarda un estilo de esa orientación en el editor manual. El proceso descarga el original, aplica el mismo estilo (video y textos) y exporta un MP4 sin abrir la línea de tiempo. La salida usa la resolución Original del editor, sin aumento artificial, y conserva sus reglas de FPS y audio.
+
+La descarga admite 1080p con alternativa 720p, o solo 720p; también mide la calidad por el lado menor en videos verticales. Si no hay calidad admitida, falla con un aviso. Se admite un video por trabajo, incluidos enlaces `youtu.be` y Shorts; se descartan parámetros de listas. No incluye directos en curso, acceso mediante cuentas/cookies, otros sitios, lotes ni ejecución por script.
+
+Puedes cancelar la descarga o la exportación. Los parciales de descarga se eliminan; un original ya descargado se conserva en `Documentos/Editor/Automaticos/<id>/` con `descarga.json`, respetando `EDITOR_DATA_DIR`. La exportación va a `Videos/ediciones/` o a la carpeta elegida; nunca sobrescribe resultados. Orientación, calidad y carpeta se recuerdan en el almacenamiento local de la interfaz.
+
+`npm run automatic:setup` descarga el ejecutable oficial de yt-dlp, verifica su SHA-256, copia Node.js desde el entorno de compilación e incluye sus licencias. Se incluyen ambos como sidecars, sin requerir Python o Node instalados en el equipo de destino. Puedes fijar una versión con `YTDLP_VERSION`; se registra en `src-tauri/binaries/AUTOMATIC-SOURCES.json`. Ejecuta este paso antes de compilar también si copias FFmpeg manualmente. Para actualizar el soporte de YouTube, vuelve a preparar las dependencias y recompila la app. Referencia: [documentación oficial de yt-dlp](https://github.com/yt-dlp/yt-dlp#installation).
+
+## Almacenamiento de proyectos
 
 Por defecto: `Documentos/Editor/Proyectos/`. Un proyecto nuevo queda en memoria hasta pulsar **Guardar** o **Ctrl+S**. Cada carpeta contiene `proyecto.json`, su copia anterior `.bak` y `cache/`. Los medios originales se referencian por ruta; no se copian ni modifican. Las miniaturas regenerables se guardan en `Editor/cache/media/`, también para proyectos aún sin guardar.
 
