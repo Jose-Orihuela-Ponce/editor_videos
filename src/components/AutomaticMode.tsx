@@ -32,6 +32,7 @@ export default function AutomaticMode({ onBusy }: { onBusy: (value: boolean) => 
   const [result, setResult] = useState('');
   const [originalFolder, setOriginalFolder] = useState('');
   const [error, setError] = useState('');
+  const urlInput = useRef<HTMLInputElement>(null);
   const active = useRef(false);
   const cancelled = useRef(false);
   const jobId = useRef('');
@@ -48,7 +49,7 @@ export default function AutomaticMode({ onBusy }: { onBusy: (value: boolean) => 
 
   async function run(event: FormEvent) {
     event.preventDefault();
-    if (active.current || !desktop) return;
+    if (active.current || result || !desktop) return;
     const requestedName = name.trim();
     active.current = true; cancelled.current = false;
     const id = crypto.randomUUID(); jobId.current = id;
@@ -89,12 +90,19 @@ export default function AutomaticMode({ onBusy }: { onBusy: (value: boolean) => 
     try { await api.cancelExport(jobId.current); }
     catch (error) { setError(String(error)); setCancelling(false); }
   }
+  function processAnother() {
+    if (active.current) return;
+    setUrl(''); setName(''); setResult(''); setOriginalFolder('');
+    setProgress(null); setError(''); setCancelling(false);
+    cancelled.current = false; jobId.current = '';
+    urlInput.current?.focus();
+  }
   return <section className="automatic-mode" aria-labelledby="automatic-title">
     <div className="automatic-heading"><Zap size={25} /><h1 id="automatic-title">Modo automático</h1></div>
     <form onSubmit={event => void run(event)}>
       <fieldset disabled={running} className="automatic-fields">
         <label className="field-label automatic-url" htmlFor="youtube-url">Enlace de YouTube
-          <input id="youtube-url" className="text-input" type="url" required value={url} placeholder="https://youtu.be/…" onChange={event => setUrl(event.target.value)} />
+          <input ref={urlInput} id="youtube-url" className="text-input" type="url" required value={url} placeholder="https://youtu.be/…" onChange={event => setUrl(event.target.value)} />
         </label>
         <label className="field-label automatic-name" htmlFor="automatic-name">Nombre del proyecto
           <input id="automatic-name" className="text-input" maxLength={100} value={name} placeholder="Título de YouTube" onChange={event => setName(event.target.value)} />
@@ -115,7 +123,7 @@ export default function AutomaticMode({ onBusy }: { onBusy: (value: boolean) => 
       {result && <div className="export-success"><div><strong>Video listo</strong><p>{result}</p><button type="button" className="secondary-button" onClick={() => void api.revealAutomatic(result).catch(error => setError(String(error)))}><FolderOpen size={16} />Mostrar en carpeta</button></div></div>}
       {originalFolder && <details className="modal-note"><summary>Original descargado</summary><p>{originalFolder}</p></details>}
       {error && <div className="inline-error" role="alert"><p>{error.split('\n')[0]}</p>{error.includes('\n') && <details><summary>Detalles</summary><pre>{error}</pre></details>}</div>}
-      <div className="modal-actions">{running ? <button type="button" className="secondary-button" disabled={cancelling} onClick={() => void cancel()}>{cancelling ? 'Cancelando…' : 'Cancelar'}</button> : <button className="primary-button" type="submit" disabled={!desktop || checking || !styleReady || !url.trim() || tools.length !== 2 || tools.some(tool => !tool.available)}><Zap size={16} />Procesar</button>}</div>
+      <div className="modal-actions">{running ? <button type="button" className="secondary-button" disabled={cancelling} onClick={() => void cancel()}>{cancelling ? 'Cancelando…' : 'Cancelar'}</button> : result ? <button className="primary-button" type="button" onClick={processAnother}><Zap size={16} />Procesar otro</button> : <button className="primary-button" type="submit" disabled={!desktop || checking || !styleReady || !url.trim() || tools.length !== 2 || tools.some(tool => !tool.available)}><Zap size={16} />Procesar</button>}</div>
     </form>
   </section>;
 }

@@ -17,17 +17,6 @@ cd editor_videos
 
 Después sigue los requisitos y comandos de desarrollo de abajo. Git conserva ambos archivos de bloqueo y los recursos de la aplicación. El `.gitignore` excluye dependencias, compilaciones, instaladores, ejecutables de FFmpeg/FFprobe, pruebas locales en `.local/` y archivos `.env` privados. Guarda los medios de prueba y las exportaciones dentro de `.local/` si trabajas en el repositorio. No añadas credenciales ni archivos personales con `git add -f`.
 
-Para revisar y publicar cambios preparados:
-
-```powershell
-git status --short
-git diff
-git add .gitignore .gitattributes .github/workflows/check.yml README.md AVANCE.md
-git diff --cached
-git commit -m "Preparar repositorio para GitHub"
-git push origin main
-```
-
 GitHub Actions ejecuta pruebas de interfaz y exportación con FFmpeg, compilación web y pruebas de Rust en Windows. No genera ni publica instaladores. La comprobación en GitHub se verifica después de subir el workflow; no sustituye las pruebas de la aplicación Tauri.
 
 El código propio no tiene todavía una licencia de distribución declarada. Montserrat conserva su licencia en `public/fonts/OFL.txt`; antes de distribuir instaladores con FFmpeg, revisa también las condiciones de la compilación utilizada (la actual incluye componentes GPL).
@@ -49,11 +38,11 @@ Para conservar los mismos códecs que la versión local, utiliza la compilación
 
 Para una versión compilada, prepara las dependencias anteriores y ejecuta `npx tauri build --bundles nsis`. Instala el archivo generado en `src-tauri/target/release/bundle/nsis/`; incluye FFmpeg y FFprobe. El código descargado de GitHub requiere estos pasos de compilación: el repositorio no contiene un instalador listo para ejecutar.
 
-Tus proyectos y estilos son independientes del código: para trasladarlos, copia `Documentos/Editor/` y los medios originales al otro equipo. Si cambian las rutas, usa **Localizar** y vuelve a guardar. Copia también tus exportaciones si las necesitas; GitHub no almacena esos datos personales.
+Tus proyectos y estilos son independientes del código: para trasladarlos, copia tu carpeta de datos configurada (`datos/` en este equipo) y los medios originales al otro equipo. Si cambian las rutas, usa **Localizar** y vuelve a guardar. Copia también tus exportaciones si las necesitas; GitHub no almacena esos datos personales.
 
 ## Instalador de Windows
 
-Instalador NSIS en `src-tauri/target/release/bundle/nsis/Editor_0.1.0_x64-setup.exe`. El código actual incluye el modo automático, FFmpeg, FFprobe, yt-dlp y Node.js. Versión compilada e instalada en este equipo el 4 de noviembre de 2026, con modo automático y velocidad en pasos de 0,01×. Después se actualizó el ejecutable instalado para aceptar calidades inferiores, nombrar el proyecto automático y adaptar la interfaz al tamaño de la ventana; hay que regenerar el instalador antes de reinstalar para conservar estas correcciones. Acceso directo, ejecutable, cuatro dependencias y conservación de datos verificados; comprobación visual pendiente. Si falta WebView2, el instalador puede necesitar conexión para obtenerlo.
+El ejecutable instalado está actualizado. El instalador antiguo se retiró durante la limpieza porque no incluía las últimas correcciones ni la reubicación de datos. Para generar uno actual, prepara las dependencias y ejecuta el comando siguiente. Al reinstalar en este equipo, conserva los argumentos `--data-dir` y `--downloads-dir` del acceso directo. Si falta WebView2, el instalador puede necesitar conexión para obtenerlo.
 
 Para volver a generarlo en Windows con las dependencias preparadas:
 
@@ -67,13 +56,17 @@ En el inicio, selecciona **Modo automático**, pega un enlace de un video de You
 
 La descarga admite 1080p con alternativa 720p, o preferencia 720p; también mide la calidad por el lado menor en videos verticales. Si no hay 1080p/720p, descarga la mejor resolución inferior disponible, conservando sus dimensiones reales. Se admite un video por trabajo, incluidos enlaces `youtu.be` y Shorts; se descartan parámetros de listas. No incluye directos en curso, acceso mediante cuentas/cookies, otros sitios, lotes ni ejecución por script.
 
-Puedes cancelar la descarga o la exportación. Los parciales de descarga se eliminan; un original ya descargado se conserva en `Documentos/Editor/Automaticos/<id>/` con `descarga.json`, respetando `EDITOR_DATA_DIR`. La exportación va a `Videos/ediciones/` o a la carpeta elegida; nunca sobrescribe resultados. Orientación, calidad y carpeta se recuerdan en el almacenamiento local de la interfaz.
+Puedes cancelar la descarga o la exportación. Los parciales de descarga se eliminan; un original ya descargado se conserva en `Videos/ediciones/descargas/<id>/` con `descarga.json` y sin borrarse al usar «Procesar otro». Para pruebas, `EDITOR_DATA_DIR` aísla también las descargas; `EDITOR_DOWNLOAD_DIR` permite indicar otra carpeta. La exportación va a `Videos/ediciones/` o a la carpeta elegida; nunca sobrescribe resultados. Al terminar aparece **Procesar otro**: limpia enlace, nombre y avisos del trabajo anterior, sin iniciar una descarga ni borrar archivos. Orientación, calidad y carpeta se conservan y se recuerdan en el almacenamiento local de la interfaz.
 
 `npm run automatic:setup` descarga el ejecutable oficial de yt-dlp, verifica su SHA-256, copia Node.js desde el entorno de compilación e incluye sus licencias. Se incluyen ambos como sidecars, sin requerir Python o Node instalados en el equipo de destino. Puedes fijar una versión con `YTDLP_VERSION`; se registra en `src-tauri/binaries/AUTOMATIC-SOURCES.json`. Ejecuta este paso antes de compilar también si copias FFmpeg manualmente. Para actualizar el soporte de YouTube, vuelve a preparar las dependencias y recompila la app. Referencia: [documentación oficial de yt-dlp](https://github.com/yt-dlp/yt-dlp#installation).
 
+## Almacenamiento en este equipo
+
+Datos, proyectos, estilos, caché y preferencias de WebView2: `C:/Users/jose/Desktop/workspace/editor_videos/datos/`, excluido de Git. MP4 finales en `C:/Users/jose/Videos/ediciones/` y originales descargados en `ediciones/descargas/<id>/`. El acceso directo configura `--data-dir` y `--downloads-dir`; debe conservar esos argumentos al reinstalar. Sin configuración de ruta, otras instalaciones mantienen Documentos/Editor como ubicación compatible.
+
 ## Almacenamiento de proyectos
 
-Por defecto: `Documentos/Editor/Proyectos/`. Un proyecto nuevo queda en memoria hasta pulsar **Guardar** o **Ctrl+S**. Cada carpeta contiene `proyecto.json`, su copia anterior `.bak` y `cache/`. Los medios originales se referencian por ruta; no se copian ni modifican. Las miniaturas regenerables se guardan en `Editor/cache/media/`, también para proyectos aún sin guardar.
+En este equipo: `editor_videos/datos/Proyectos/`. Otras instalaciones sin ruta configurada usan `Documentos/Editor/Proyectos/`. Un proyecto nuevo queda en memoria hasta pulsar **Guardar** o **Ctrl+S**. Cada carpeta contiene `proyecto.json`, su copia anterior `.bak` y `cache/`. Los medios originales se referencian por ruta; no se copian ni modifican. Las miniaturas regenerables se guardan en `Editor/cache/media/`, también para proyectos aún sin guardar.
 
 Para una prueba aislada, en la misma terminal antes de iniciar:
 
@@ -84,7 +77,7 @@ npm run desktop
 
 Para volver a la carpeta normal, abre otra terminal o ejecuta `Remove-Item Env:EDITOR_DATA_DIR`.
 
-Las exportaciones van por defecto a **`C:\Users\freud\Videos\ediciones`** (Videos/ediciones del usuario). La ventana de exportación muestra la ruta completa y permite elegir otra carpeta. `EDITOR_DATA_DIR` cambia los datos del proyecto, no este destino; en pruebas aisladas elige explícitamente una carpeta de salida dentro de `.local/`.
+Las exportaciones van por defecto a **Videos/ediciones del usuario** (`C:/Users/jose/Videos/ediciones/` en este equipo). La ventana de exportación muestra la ruta completa y permite elegir otra carpeta. `EDITOR_DATA_DIR` cambia los datos del proyecto, no este destino; en pruebas aisladas elige explícitamente una carpeta de salida dentro de `.local/`.
 
 ## Archivos movidos y atajos
 
@@ -98,7 +91,7 @@ Selecciona un video de la pista principal y pulsa **Guardar estilo** en la barra
 
 Selecciona otro video y pulsa **Aplicar estilo**: se aplican los ajustes del video y se añaden copias de los textos, sin eliminar los que ya había. Los textos que excedan el final del video se recortan en la nueva copia; si se selecciona un texto, se aplica a ese texto el contenido, formato y posición del primer texto guardado. La operación se puede deshacer y rehacer. Los cortes del video seleccionado se conservan.
 
-**Restablecer**, **Copiar** y **Pegar** siguen disponibles en el panel del clip o texto. Los estilos se guardan en `Documentos/Editor/Preajustes/horizontal.json` y `vertical.json`, o en la carpeta de `EDITOR_DATA_DIR` durante las pruebas. Los videos superpuestos no admiten todos los ajustes del video principal y no pueden recibir el estilo completo.
+**Restablecer**, **Copiar** y **Pegar** siguen disponibles en el panel del clip o texto. Los estilos se guardan en `datos/Preajustes/horizontal.json` y `vertical.json` en este equipo, o bajo la carpeta de datos configurada. Los videos superpuestos no admiten todos los ajustes del video principal y no pueden recibir el estilo completo.
 
 ## Comprobar
 

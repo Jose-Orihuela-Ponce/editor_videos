@@ -36,22 +36,15 @@ export function applyStyleToText(project: Project, id: string, template: StyleTe
   updateOverlay(project,id,{text:template.text,style:{...template.style},posX:template.posX,posY:template.posY,scale:template.scale});
 }
 interface PresetState {
-  presets: Record<Orientation, Preset>; choice: 'none' | 'mine'; clipboard: Clipboard | null; busy: boolean;
-  select: (choice: 'none' | 'mine') => void; load: () => Promise<void>;
-  savePart: (orientation: Orientation, part: Clipboard) => Promise<void>; copy: (part: Clipboard) => void;
+  presets: Record<Orientation, Preset>; clipboard: Clipboard | null; busy: boolean;
+  load: () => Promise<void>; copy: (part: Clipboard) => void;
   saveStyle: (orientation: Orientation, preset: Preset) => Promise<void>;
 }
 const empty = (): Preset => ({clip:null,text:null});
 export const usePresets = create<PresetState>((set,get) => ({
-  presets:{horizontal:empty(),vertical:empty()},choice:'none',clipboard:null,busy:false,
-  select: choice => set({choice}), copy: part => set({clipboard:structuredClone(part)}),
+  presets:{horizontal:empty(),vertical:empty()},clipboard:null,busy:false,
+  copy: part => set({clipboard:structuredClone(part)}),
   load: async () => { if (!desktop) return; const [horizontal,vertical]=await Promise.all([api.loadPreset('horizontal'),api.loadPreset('vertical')]); set({presets:{horizontal,vertical}}); },
-  savePart: async (orientation,part) => {
-    if(get().busy) throw new Error('Hay un guardado de preajuste en curso.');
-    set({busy:true});
-    try { const current=get().presets[orientation], preset={...current,[part.kind]:structuredClone(part.value)}; const saved=desktop ? await api.savePreset(orientation,preset) : preset; set(s=>({presets:{...s.presets,[orientation]:saved}})); }
-    finally { set({busy:false}); }
-  },
   saveStyle: async (orientation,preset) => {
     if(get().busy) throw new Error('Hay un guardado de estilo en curso.'); set({busy:true});
     try { const saved=desktop ? await api.savePreset(orientation,preset) : structuredClone(preset); set(s=>({presets:{...s.presets,[orientation]:saved}})); }

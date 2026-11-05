@@ -52,7 +52,7 @@ impl Repository {
     }
 
     fn ensure_dirs(&self) -> Result<(), String> {
-        for name in ["Proyectos", "Preajustes", "Exportados"] {
+        for name in ["Proyectos", "Preajustes"] {
             fs::create_dir_all(self.root.join(name))
                 .map_err(|e| format!("No se pudo preparar la carpeta de proyectos: {e}"))?;
         }

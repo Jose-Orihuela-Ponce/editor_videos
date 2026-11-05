@@ -4,14 +4,14 @@ mod media;
 mod model;
 mod presets;
 mod repository;
+mod storage;
 
 use model::{Orientation, Project};
 use repository::{Document, Library, Repository};
 use serde::Serialize;
-use std::{
-    path::{Path, PathBuf},
-    process::Command,
-};
+use std::{path::Path, process::Command};
+#[cfg(debug_assertions)]
+use std::path::PathBuf;
 use tauri::{Emitter, Manager};
 
 #[tauri::command]
@@ -24,12 +24,12 @@ async fn download_youtube(
     url: String,
     quality: String,
     job_id: String,
-    repo: tauri::State<'_, Repository>,
+    paths: tauri::State<'_, storage::StoragePaths>,
     state: tauri::State<'_, export::ExportState>,
     app: tauri::AppHandle,
 ) -> Result<automatic::DownloadResult, String> {
     let url = automatic::youtube_url(&url)?;
-    let root = repo.root.clone();
+    let root = paths.downloads.clone();
     let downloader = media::tool_path(&app, "yt-dlp")?;
     let node = media::tool_path(&app, "node")?;
     let ffmpeg = media::tool_path(&app, "ffmpeg")?;
@@ -297,17 +297,20 @@ async fn get_tools(app: tauri::AppHandle) -> Vec<ToolStatus> {
 }
 
 pub fn run() {
-    let root = std::env::var_os("EDITOR_DATA_DIR")
-        .map(PathBuf::from)
-        .unwrap_or_else(|| {
-            dirs::document_dir()
-                .unwrap_or_else(|| dirs::home_dir().unwrap_or_default().join("Documents"))
-                .join("Editor")
-        });
+    let paths = storage::StoragePaths::resolve().expect("No se pudieron localizar las carpetas de Editor");
+    let webview_directory = paths.data.join("WebView");
     tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
-        .manage(Repository::new(root))
+        .manage(Repository::new(paths.data.clone()))
+        .manage(paths)
         .manage(export::ExportState::default())
+        .setup(move |app| {
+            std::fs::create_dir_all(&webview_directory)?;
+            tauri::WebviewWindowBuilder::from_config(app, &app.config().app.windows[0])?
+                .data_directory(webview_directory)
+                .build()?;
+            Ok(())
+        })
         .invoke_handler(tauri::generate_handler![
             get_library,
             load_preset,

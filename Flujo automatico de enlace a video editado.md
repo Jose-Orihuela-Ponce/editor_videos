@@ -40,7 +40,7 @@ La resolución de descarga se mide por el lado menor: 1280×720 y 720×1280 corr
 
 El estilo se prepara una vez en el editor: importar un video representativo, ajustar su apariencia y sus textos, comprobar una exportación y pulsar **Guardar estilo**. El flujo automático debe leer ese formato existente, sin obligar a crear el mismo estilo en otro sistema.
 
-Actualmente hay un estilo por orientación en `Documentos/Editor/Preajustes/horizontal.json` y `vertical.json`, bajo la carpeta de datos configurada. Debe respetarse también `EDITOR_DATA_DIR`.
+Actualmente hay un estilo por orientación en `datos/Preajustes/horizontal.json` y `vertical.json` en este equipo, bajo la carpeta de datos configurada. Debe respetarse también `EDITOR_DATA_DIR`.
 
 El estilo conjunto conserva:
 
@@ -81,7 +81,7 @@ La exportación debe conservar el mecanismo de salida temporal y publicación fi
 
 La carpeta de salida predeterminada puede ser `Videos/ediciones/`, como en el editor, con opción de configurarla. Definir explícitamente si se conserva la descarga original; no borrarla por defecto sin una política configurada. Los archivos parciales del trabajo sí deben limpiarse al cancelar o fallar.
 
-La descarga original y `descarga.json` con el enlace normalizado, título y datos efectivos del medio se conservan en `Editor/Automaticos/<id>/`. El estilo se toma como instantánea en memoria al comenzar. La pantalla muestra el estado y la ruta del MP4 final. El historial persistente de trabajos y el archivo de sus estilos quedan como mejora futura. Los fallos deben indicar la etapa afectada y no marcar un archivo incompleto como resultado final.
+La descarga original y `descarga.json` con el enlace normalizado, título y datos efectivos del medio se conservan en `Videos/ediciones/descargas/<id>/`. El estilo se toma como instantánea en memoria al comenzar. La pantalla muestra el estado y la ruta del MP4 final. El historial persistente de trabajos y el archivo de sus estilos quedan como mejora futura. Los fallos deben indicar la etapa afectada y no marcar un archivo incompleto como resultado final.
 
 Si falta un estilo válido con ajustes de video, detener el trabajo con un mensaje claro. No entregar una exportación sin estilo como si se hubiera completado correctamente.
 

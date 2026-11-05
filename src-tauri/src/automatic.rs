@@ -159,7 +159,7 @@ pub fn download(
     let selector = format_selector(quality)?;
     let maximum_resolution = quality.parse::<u32>().map_err(|_| "Calidad no válida.")?;
     let id = uuid::Uuid::parse_str(job_id).map_err(|_| "Identificador de trabajo no válido.")?;
-    let parent = root.join("Automaticos");
+    let parent = root.to_path_buf();
     fs::create_dir_all(&parent).map_err(|e| e.to_string())?;
     let parent = fs::canonicalize(parent).map_err(|e| e.to_string())?;
     let folder = parent.join(id.to_string());
@@ -367,6 +367,26 @@ fn download_into(
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn cancelled_download_uses_the_configured_parent_and_preserves_existing_files() {
+        let base = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../.local/rust-tests");
+        fs::create_dir_all(&base).unwrap();
+        let base = fs::canonicalize(base).unwrap();
+        let root = base.join(uuid::Uuid::new_v4().to_string());
+        let parent = root.join("ediciones/descargas");
+        let existing = parent.join("existing");
+        fs::create_dir_all(&existing).unwrap();
+        fs::write(existing.join("original.mkv"), b"original retained").unwrap();
+        let job = uuid::Uuid::new_v4().to_string();
+        let result = download(&parent, Path::new("unused"), Path::new("unused"), Path::new("unused"), Path::new("unused"),
+            "https://youtu.be/BaW_jenozKc", "720", &job, &AtomicBool::new(true), |_| {}).unwrap();
+        assert!(result.cancelled);
+        assert!(!parent.join(job).exists());
+        assert!(!parent.join("Automaticos").exists());
+        assert_eq!(fs::read(existing.join("original.mkv")).unwrap(), b"original retained");
+        assert_eq!(fs::canonicalize(&root).unwrap().parent(), Some(base.as_path()));
+        fs::remove_dir_all(root).unwrap();
+    }
     #[test]
     fn normalizes_only_individual_youtube_links() {
         for url in [

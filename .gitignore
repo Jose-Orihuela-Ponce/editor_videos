@@ -13,6 +13,7 @@ src-tauri/icons/*.icns
 
 # Datos y pruebas locales (no incluir originales ni exportaciones)
 .local/
+datos/
 coverage/
 playwright-report/
 test-results/
