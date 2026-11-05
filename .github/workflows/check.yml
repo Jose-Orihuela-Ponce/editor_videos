@@ -14,8 +14,8 @@ jobs:
     runs-on: windows-latest
     timeout-minutes: 30
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v6
         with:
           node-version: 24
           cache: npm
@@ -24,9 +24,16 @@ jobs:
       - name: Preparar FFmpeg y FFprobe
         shell: pwsh
         run: |
-          if (-not (Get-Command ffmpeg -ErrorAction SilentlyContinue) -or -not (Get-Command ffprobe -ErrorAction SilentlyContinue)) {
-            choco install ffmpeg --yes --no-progress
-            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          choco install ffmpeg --yes --no-progress
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          # Chocolatey's PATH entries are shims, not portable FFmpeg binaries.
+          $packageRoot = Join-Path $env:ChocolateyInstall 'lib/ffmpeg'
+          $ffmpeg = Get-ChildItem -LiteralPath $packageRoot -Recurse -File -Filter ffmpeg.exe | Select-Object -First 1
+          if (-not $ffmpeg) { throw 'No se encontró el ejecutable real de FFmpeg.' }
+          $env:FFMPEG_BIN = $ffmpeg.FullName
+          $env:FFPROBE_BIN = Join-Path $ffmpeg.DirectoryName 'ffprobe.exe'
+          if (-not (Test-Path -LiteralPath $env:FFPROBE_BIN)) {
+            throw 'No se encontró FFprobe junto a FFmpeg.'
           }
           npm run sidecars
       - name: Comprobar interfaz y exportaciones

@@ -24,7 +24,13 @@ for (const name of ['ffmpeg', 'ffprobe']) {
   const target = join(destination, `${name}-${manifest.target}.exe`);
   const sourceHash = await hashFile(source);
   if (!existsSync(target) || await hashFile(target) !== sourceHash) await copyFile(source, target);
-  const version = execFileSync(source, ['-version'], { encoding: 'utf8', windowsHide: true }).split(/\r?\n/)[0];
+  // A PATH entry may be a package-manager shim that stops working when copied.
+  let version;
+  try {
+    version = execFileSync(target, ['-version'], { encoding: 'utf8', windowsHide: true }).split(/\r?\n/)[0];
+  } catch (error) {
+    throw new Error(`No se pudo ejecutar ${name} copiado. Define ${name.toUpperCase()}_BIN con el ejecutable real, no con un lanzador de Chocolatey o Scoop.`, { cause: error });
+  }
   manifest.binaries.push({ name, version, sha256: sourceHash, bytes: (await stat(target)).size });
   process.stdout.write(`${name}: preparado (${Math.round((await stat(target)).size / 1024 / 1024)} MB)\n`);
 }

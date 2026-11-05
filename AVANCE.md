@@ -1,28 +1,32 @@
 # Avance
 
-Actualizado: 3 de noviembre de 2026.
+Actualizado: 4 de noviembre de 2026.
 
 ## Estado
 
-- Etapas 1–6 implementadas. La etapa 7 (Whisper local) sigue futura y opcional.
-- Ampliación autorizada: **Modo automático** en el inicio, junto al editor manual. Solo videos individuales de YouTube: enlace → descarga 1080p con alternativa 720p, o solo 720p → estilo guardado por orientación → exportación MP4. Comparte aplicación de estilos, textos canvas y exportación; no abre la línea de tiempo ni modifica el proyecto manual.
-- Pantalla con el estilo azul del editor y controles ordenados, sin explicaciones adicionales. Progreso, cancelación y mostrar resultado en carpeta. Recuerda orientación, calidad y carpeta en el almacenamiento local de la interfaz.
-- Descargas originales en `Documentos/Editor/Automaticos/<id>/`, con `descarga.json`; respeta `EDITOR_DATA_DIR`. Cancela y limpia descargas incompletas; conserva originales completos. Exportación predeterminada: `Videos/ediciones/`.
-- Estilos en `Documentos/Editor/Preajustes/`, independientes por orientación. Guardan encuadre, velocidad, volumen y textos con contenido y tiempos relativos. Los videos superpuestos conservan sus limitaciones anteriores.
-- Dependencias del modo automático: yt-dlp y Node incluidos como sidecars, con licencias y manifiesto SHA-256. Preparación: `npm run automatic:setup`; luego compilar. FFmpeg/FFprobe siguen incluidos. Ver README y plan.
-- Editor manual: paneles desplegables, pistas simultáneas, historial, respaldo, relocalización, proxies solo para vista previa, MP4/MP3 y aviso de cambios sin guardar.
-- Ejecutable de escritorio e instalador regenerados con el modo automático. El acceso directo `Escritorio/Editor de video.lnk` apunta a `src-tauri/target/release/`; no es una instalación. Instalador: `src-tauri/target/release/bundle/nsis/Editor_0.1.0_x64-setup.exe` (153.14 MiB); no se instaló en el equipo.
-- GitHub: `origin` = `https://github.com/Jose-Orihuela-Ponce/editor_videos.git`, rama `main`. Punto de retorno previo al modo automático: commit `93f2a40`. Commit y publicación del modo automático autorizados por el usuario.
+- Etapas 1–6 implementadas; Whisper (etapa 7) sigue futuro y opcional. Modo automático de YouTube autorizado e implementado.
+- Aplicación instalada en `C:/Users/jose/AppData/Local/Programs/Editor/`; un único acceso `Escritorio/Editor de video.lnk` apunta allí. Ejecutable actualizado, respaldo en `.local/responsive-update/`; proyectos y estilos conservados.
+- Ventana inicial 1000 × 620, mínimo 720 × 420, centrada y con `preventOverflow`. Inicio compacto, sin textos decorativos ni barra lateral grande. Formulario automático en filas. Editor horizontal/vertical ajustado al viewport; paneles y pistas se desplazan internamente.
+- Modo automático: nombre de proyecto editable antes del trabajo, bloqueado durante el proceso; se usa también para el MP4. Vacío usa el título de YouTube. Carga el último estilo guardado del editor manual para la orientación elegida, incluidos ajustes y textos.
+- Descarga: prefiere 1080p/720p; si no existen, elige la mejor inferior, sin agrandar. Originales en `Documentos/Editor/Automaticos/<id>/`; respeta `EDITOR_DATA_DIR`. Salida de ambos modos: `C:/Users/jose/Videos/ediciones/` por defecto.
+- Velocidad con paso 0,01× (admite 1,04×). Estilo conjunto por orientación: velocidad, volumen, escala, posición, espejos, recorte y textos completos con formato y tiempos, limitados a la duración del destino. No representa un montaje completo ni todas las transformaciones de videos superpuestos.
+- Editor manual con pistas simultáneas, historial, respaldo, relocalización, proxies de vista previa y exportación desde originales. Proyectos/preajustes en `Documentos/Editor/`; `EDITOR_DATA_DIR` permite pruebas aisladas.
+- Dependencias incluidas: FFmpeg/FFprobe 9.0.2, yt-dlp 2026.10.26 y Node 22.12.0, con manifiestos/licencias. `npm run automatic:setup` prepara descargador y runtime.
+- GitHub: `origin` = `https://github.com/Jose-Orihuela-Ponce/editor_videos.git`; rama `main`. Esta sesión agrupa las mejoras actuales y el arreglo de CI para commit/push autorizado por el usuario; base anterior `0f8c625`. Respaldo previo en stash `respaldo-local-antes-actualizar-2026-11-04`.
 
 ## Comprobado
 
-- 48 pruebas de TypeScript y 13 de Rust aprobadas; compilación web y ejecutable de escritorio aprobados. Incluyen persistencia, historial, exportación real y selección offline con yt-dlp de 1080p, alternativa 720p, vertical, fuente sin audio y error si no hay calidad admitida.
-- Tauri real, datos aislados: guardar/recargar estilo, rechazar enlaces externos, cancelar descarga con limpieza y procesar un enlace real de YouTube a 720p. Original de 634.624 s → MP4 de 158.656 s con velocidad 4, encuadre, volumen y textos. Los fotogramas comparados coinciden con la exportación manual del mismo original. Evidencia: `.local/check-automatic-native.mjs`, `.local/automatic-native/result.json` y capturas.
-- Verificaciones anteriores de Tauri: relocalizar y guardar/reabrir con deshacer/rehacer; proxies H.264 para 1440p y error de reproducción; exportación desde originales. Evidencias `.local/check-stage6-native.mjs`, `.local/check-proxy-playback.mjs` y `.local/check-proxy-fallback.mjs`.
-- Distribución comprobada en Tauri real: detecta sus cuatro sidecars, carga el estilo guardado, conserva calidad tras recargar y bloquea Procesar si falta el estilo de la orientación elegida. Evidencia: `.local/check-automatic-release.mjs`, `.local/automatic-release/result.json` y captura. NSIS generado; no se ejecutó el instalador ni se verificó una instalación completa. Ventanas de prueba cerradas.
+- Publicación de este punto: preparación de sidecars validada, 51 pruebas JavaScript y 13 de Rust aprobadas, compilación web aprobada.
+- GitHub Actions: workflow «Comprobaciones» añadido al preparar GitHub (`6055157`), automático con push a main. Las tres ejecuciones anteriores fallaron al copiar shims de Chocolatey (0 MB) como FFmpeg/FFprobe. Corregido para usar los ejecutables reales del paquete y validar la copia; checkout/setup-node actualizados a runtimes Node 24. Registro revisado: ejecución `41776307447`.
+
+- Nombre/distribución: siete pruebas del modo automático y compilación web/release aprobadas. Navegador con API nativa simulada: 19 distribuciones entre 640 × 480 y 1280 × 720; incluye mínimo nativo 720 × 420, nombre del MP4, bloqueo durante proceso y estilo compartido. Evidencia: `.local/ui-check/output/results.json` y capturas.
+- Tauri instalado real mediante CDP de WebView2: campo editable y estilo horizontal guardado disponibles, formulario dentro de viewport 1070 × 650. Ventana minimizada durante la comprobación final; no se validó posición física final. Evidencia: `.local/ui-check/output/native-result.json`. Prueba cerrada; aplicación reabierta normalmente sin modo diagnóstico.
+- Ejecutable instalado verificado por SHA-256 (marcador NSIS `NSS`); dos archivos de datos conservaron hashes al actualizar. Un único acceso directo verificado. Evidencia: `.local/responsive-update/updated.json` y `final.json`.
+- Descarga: enlace `8kteWHiD-J8` disponible hasta 854 × 470; nueva selección descargó muestra real de 5,021 s con imagen/audio. Pasaron 13 pruebas Rust con SD, HD recortado y vertical. Evidencia: `.local/download-debug/`.
+- Verificaciones anteriores: 50 pruebas JavaScript, 13 Rust, persistencia del estilo completo a 1,04×, varios textos y deshacer/rehacer. Pruebas nativas detalladas de descarga/exportación/relocalización/proxies del equipo de origen están descritas en la documentación anterior; no confundirlas con esta instalación.
 
 ## Retomar aquí
 
-Consultar README, plan y `Flujo automatico de enlace a video editado.md`. Fuera del modo automático actual: otros proveedores, cuentas/cookies, lotes, ejecución por script e historial persistente de trabajos. La vista web no accede al disco; comprobar Tauri con `EDITOR_DATA_DIR` y salida explícita dentro de `.local/`.
-
-Pendientes anteriores: confirmar sentido de Y con el usuario y medir rendimiento largo/4K. El editor manual todavía referencia los originales y no los copia automáticamente al proyecto.
+- El instalador NSIS existente (161,27 MiB) es anterior a las correcciones de calidad inferior, nombre y distribución: regenerarlo antes de reinstalar. El ejecutable instalado sí está actualizado.
+- Consultar README, plan y `Flujo automatico de enlace a video editado.md`. Fuera de alcance automático: otros proveedores, cuentas/cookies, lotes, scripts e historial persistente de trabajos.
+- Pendiente confirmar sentido del eje Y y medir rendimiento largo/4K. El editor manual referencia originales; todavía no los copia al proyecto. Probar siempre Tauri para disco, con datos/salidas aislados en `.local/` cuando corresponda.

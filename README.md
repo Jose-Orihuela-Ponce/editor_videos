@@ -43,9 +43,9 @@ npm run automatic:setup
 npm run desktop
 ```
 
-`sidecars` copia FFmpeg y FFprobe desde el PATH a `src-tauri/binaries/`, con los nombres exigidos por Tauri. También puedes indicar `FFMPEG_BIN` y `FFPROBE_BIN`. Se registra versión y SHA-256 en `SOURCES.json`; los ejecutables se excluyen de Git. En este equipo los binarios completos ocupan aproximadamente 402 MB en total.
+`sidecars` copia FFmpeg y FFprobe desde el PATH a `src-tauri/binaries/`, con los nombres exigidos por Tauri. También puedes indicar `FFMPEG_BIN` y `FFPROBE_BIN`. Deben señalar los ejecutables reales, no los lanzadores de Chocolatey/Scoop: se comprueba que la copia pueda ejecutarse. Se registra versión y SHA-256 en `SOURCES.json`; los ejecutables se excluyen de Git. En este equipo los binarios completos ocupan aproximadamente 434 MB en total.
 
-Para conservar los mismos códecs que la versión local, utiliza la compilación completa de FFmpeg 8.0.1 de Gyan indicada en `src-tauri/binaries/SOURCES.json` (incluye libx264 y libmp3lame). Puedes copiar los dos ejecutables de `src-tauri/binaries/` de este equipo al mismo directorio del otro equipo; en ese caso no hace falta ejecutar `npm run sidecars`. Comprueba sus SHA-256 contra el manifiesto con `Get-FileHash -Algorithm SHA256`. La aceleración de exportación dependerá de la GPU y los controladores del otro equipo; existe respaldo por CPU.
+Para conservar los mismos códecs que la versión local, utiliza la compilación completa de FFmpeg 9.0.2 de Gyan indicada en `src-tauri/binaries/SOURCES.json` (incluye libx264 y libmp3lame). Puedes copiar los dos ejecutables de `src-tauri/binaries/` de este equipo al mismo directorio del otro equipo; en ese caso no hace falta ejecutar `npm run sidecars`. Comprueba sus SHA-256 contra el manifiesto con `Get-FileHash -Algorithm SHA256`. La aceleración de exportación dependerá de la GPU y los controladores del otro equipo; existe respaldo por CPU.
 
 Para una versión compilada, prepara las dependencias anteriores y ejecuta `npx tauri build --bundles nsis`. Instala el archivo generado en `src-tauri/target/release/bundle/nsis/`; incluye FFmpeg y FFprobe. El código descargado de GitHub requiere estos pasos de compilación: el repositorio no contiene un instalador listo para ejecutar.
 
@@ -53,7 +53,7 @@ Tus proyectos y estilos son independientes del código: para trasladarlos, copia
 
 ## Instalador de Windows
 
-Instalador NSIS en `src-tauri/target/release/bundle/nsis/Editor_0.1.0_x64-setup.exe`. La versión actual incluye la interfaz manual y el modo automático, FFmpeg, FFprobe, yt-dlp y Node.js. No se ha ejecutado el instalador ni comprobado una instalación completa; las pruebas nativas se realizan sobre el ejecutable compilado con datos aislados. Si falta WebView2, el instalador puede necesitar conexión para obtenerlo.
+Instalador NSIS en `src-tauri/target/release/bundle/nsis/Editor_0.1.0_x64-setup.exe`. El código actual incluye el modo automático, FFmpeg, FFprobe, yt-dlp y Node.js. Versión compilada e instalada en este equipo el 4 de noviembre de 2026, con modo automático y velocidad en pasos de 0,01×. Después se actualizó el ejecutable instalado para aceptar calidades inferiores, nombrar el proyecto automático y adaptar la interfaz al tamaño de la ventana; hay que regenerar el instalador antes de reinstalar para conservar estas correcciones. Acceso directo, ejecutable, cuatro dependencias y conservación de datos verificados; comprobación visual pendiente. Si falta WebView2, el instalador puede necesitar conexión para obtenerlo.
 
 Para volver a generarlo en Windows con las dependencias preparadas:
 
@@ -63,9 +63,9 @@ npx tauri build --bundles nsis
 
 ## Modo automático de YouTube
 
-En el inicio, selecciona **Modo automático**, pega un enlace de un video de YouTube, elige orientación y calidad, y pulsa **Procesar**. Primero guarda un estilo de esa orientación en el editor manual. El proceso descarga el original, aplica el mismo estilo (video y textos) y exporta un MP4 sin abrir la línea de tiempo. La salida usa la resolución Original del editor, sin aumento artificial, y conserva sus reglas de FPS y audio.
+En el inicio, selecciona **Modo automático**, pega un enlace de un video de YouTube, escribe el **Nombre del proyecto**, elige orientación y calidad, y pulsa **Procesar**. El nombre queda bloqueado durante el trabajo y se usa para el MP4; si lo dejas vacío, se usa el título de YouTube. Primero guarda un estilo de esa orientación en el editor manual. El proceso descarga el original, aplica el mismo estilo (video y textos) y exporta un MP4 sin abrir la línea de tiempo. La salida usa la resolución Original del editor, sin aumento artificial, y conserva sus reglas de FPS y audio.
 
-La descarga admite 1080p con alternativa 720p, o solo 720p; también mide la calidad por el lado menor en videos verticales. Si no hay calidad admitida, falla con un aviso. Se admite un video por trabajo, incluidos enlaces `youtu.be` y Shorts; se descartan parámetros de listas. No incluye directos en curso, acceso mediante cuentas/cookies, otros sitios, lotes ni ejecución por script.
+La descarga admite 1080p con alternativa 720p, o preferencia 720p; también mide la calidad por el lado menor en videos verticales. Si no hay 1080p/720p, descarga la mejor resolución inferior disponible, conservando sus dimensiones reales. Se admite un video por trabajo, incluidos enlaces `youtu.be` y Shorts; se descartan parámetros de listas. No incluye directos en curso, acceso mediante cuentas/cookies, otros sitios, lotes ni ejecución por script.
 
 Puedes cancelar la descarga o la exportación. Los parciales de descarga se eliminan; un original ya descargado se conserva en `Documentos/Editor/Automaticos/<id>/` con `descarga.json`, respetando `EDITOR_DATA_DIR`. La exportación va a `Videos/ediciones/` o a la carpeta elegida; nunca sobrescribe resultados. Orientación, calidad y carpeta se recuerdan en el almacenamiento local de la interfaz.
 
@@ -130,7 +130,7 @@ Selecciona un clip en la línea de tiempo o en la vista previa para mostrar sus 
 - **Posición X/Y** se mide en píxeles del lienzo desde el centro. X positivo mueve a la derecha; **Y positivo mueve hacia abajo**. Las flechas del teclado mueven el clip seleccionado 1 píxel; con **Mayús**, 10. Los campos numéricos conservan su uso normal del teclado. El desplazamiento máximo es dos anchos o dos altos del lienzo.
 - **Espejo horizontal/vertical** actúa después del recorte del original.
 - **Recorte de imagen**: pulsa **Editar sobre la vista previa** para mostrar el original completo. Arrastra las esquinas del recuadro para cambiar el área o arrastra su interior para moverla. **Terminar recorte** vuelve al resultado, con el recorte encajado, los espejos, la escala y la posición aplicados. Los campos Izquierda/Arriba/Ancho/Alto son porcentajes del original; el área debe conservar al menos 2 píxeles de ancho y alto. El recorte de imagen es independiente de cortar la duración con tijeras.
-- **Velocidad** admite **0,25× a 4×**, conservando el tono del audio. Con unión automática, los siguientes clips se desplazan al cambiar la duración. En modo libre se conserva su posición; si el cambio causa un solapamiento, se rechaza completo y se mantiene el valor anterior.
+- **Velocidad** admite **0,25× a 4×** con pasos de **0,01×** (por ejemplo, **1,04×**), conservando el tono del audio. Con unión automática, los siguientes clips se desplazan al cambiar la duración. En modo libre se conserva su posición; si el cambio causa un solapamiento, se rechaza completo y se mantiene el valor anterior.
 - **Volumen** admite **0% a 200%** mediante Web Audio. Sobre **150%** aparece un aviso de posible distorsión. La vista previa usa un compresor de salida; la exportación aplica un limitador final. Ambos protegen los picos con motores de audio distintos.
 
 Los ajustes se guardan en el proyecto y se conservan al dividir un clip. Cada gesto del deslizador, campo o recuadro se puede deshacer/rehacer como una acción. La exportación MP4 aplica el mismo orden de geometría que la vista previa; MP3 usa únicamente los ajustes de audio y velocidad. Lo que sale del lienzo se corta y el fondo es negro. No hay rotación.

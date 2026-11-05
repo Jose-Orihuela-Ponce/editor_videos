@@ -10,9 +10,9 @@
     },
     {
       "name": "node",
-      "version": "v24.22.0",
-      "source": "https://nodejs.org/dist/v24.22.0/",
-      "sha256": "ba93f9a70bd86fce3ebbb39ec758501458453467aa92a34a0a3602d1e3fc2b9c"
+      "version": "v22.12.0",
+      "source": "https://nodejs.org/dist/v22.12.0/",
+      "sha256": "b3b117a08ee61efee09e6fd523ab33c0c018da1b570bde08e4fd914dc1170ed6"
     }
   ]
 }

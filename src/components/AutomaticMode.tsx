@@ -21,6 +21,7 @@ function preferences(): { orientation: Orientation; quality: DownloadQuality; fo
 export default function AutomaticMode({ onBusy }: { onBusy: (value: boolean) => void }) {
   const [settings, setSettings] = useState(preferences);
   const [url, setUrl] = useState('');
+  const [name, setName] = useState('');
   const [defaultFolder, setDefaultFolder] = useState('');
   const [tools, setTools] = useState<ToolStatus[]>([]);
   const [styleReady, setStyleReady] = useState(false);
@@ -48,6 +49,7 @@ export default function AutomaticMode({ onBusy }: { onBusy: (value: boolean) => 
   async function run(event: FormEvent) {
     event.preventDefault();
     if (active.current || !desktop) return;
+    const requestedName = name.trim();
     active.current = true; cancelled.current = false;
     const id = crypto.randomUUID(); jobId.current = id;
     setRunning(true); onBusy(true); useSession.setState({ exporting: true });
@@ -65,8 +67,8 @@ export default function AutomaticMode({ onBusy }: { onBusy: (value: boolean) => 
       if (!download.media) throw new Error('No se recibió el video descargado.');
       setOriginalFolder(download.folder);
       setProgress({ jobId: id, percent: 0, stage: 'Aplicando estilo y preparando textos' });
-      const project = automaticProject(download.media, settings.orientation, preset, download.title);
-      const options = { format: 'mp4' as const, quality: 'original' as const, hardware: true, name: automaticName(download.title), folder: settings.folder };
+      const project = automaticProject(download.media, settings.orientation, preset, requestedName || download.title);
+      const options = { format: 'mp4' as const, quality: 'original' as const, hardware: true, name: automaticName(download.title, requestedName), folder: settings.folder };
       const { snapshot, plan } = await prepareExport(project, options);
       if (cancelled.current) return;
       const exported = await api.exportProject(snapshot, plan, options, id);
@@ -90,20 +92,23 @@ export default function AutomaticMode({ onBusy }: { onBusy: (value: boolean) => 
   return <section className="automatic-mode" aria-labelledby="automatic-title">
     <div className="automatic-heading"><Zap size={25} /><h1 id="automatic-title">Modo automático</h1></div>
     <form onSubmit={event => void run(event)}>
-      <fieldset disabled={running}>
-        <label className="field-label" htmlFor="youtube-url">Enlace de YouTube</label>
-        <input id="youtube-url" className="text-input" type="url" required value={url} placeholder="https://www.youtube.com/watch?v=…" onChange={event => setUrl(event.target.value)} />
-        <div className="export-fields">
+      <fieldset disabled={running} className="automatic-fields">
+        <label className="field-label automatic-url" htmlFor="youtube-url">Enlace de YouTube
+          <input id="youtube-url" className="text-input" type="url" required value={url} placeholder="https://youtu.be/…" onChange={event => setUrl(event.target.value)} />
+        </label>
+        <label className="field-label automatic-name" htmlFor="automatic-name">Nombre del proyecto
+          <input id="automatic-name" className="text-input" maxLength={100} value={name} placeholder="Título de YouTube" onChange={event => setName(event.target.value)} />
+        </label>
           <label className="field-label">Orientación<select className="text-input" value={settings.orientation} onChange={event => setSettings({ ...settings, orientation: event.target.value as Orientation })}><option value="horizontal">Horizontal · 16:9</option><option value="vertical">Vertical · 9:16</option></select></label>
-          <label className="field-label">Calidad de descarga<select className="text-input" value={settings.quality} onChange={event => setSettings({ ...settings, quality: event.target.value as DownloadQuality })}><option value="1080">1080p · alternativa 720p</option><option value="720">720p</option></select></label>
-        </div>
-        <p className={`automatic-style ${styleReady ? 'ready' : ''}`} role="status">{checking ? 'Comprobando estilo…' : styleReady ? `Estilo ${settings.orientation} guardado ✓` : `Guarda primero un estilo ${settings.orientation} en el editor manual.`}</p>
-        <label className="field-label">Carpeta de salida</label>
+          <label className="field-label">Calidad preferida<select className="text-input" value={settings.quality} onChange={event => setSettings({ ...settings, quality: event.target.value as DownloadQuality })}><option value="1080">1080p · o la mejor inferior</option><option value="720">720p · o la mejor inferior</option></select></label>
+        <label className="field-label automatic-folder">Carpeta de salida
         <button type="button" className="export-folder secondary-button" disabled={!desktop} onClick={async () => {
           try { const folder = await api.chooseFolder(); if (typeof folder === 'string') setSettings({ ...settings, folder }); }
           catch (error) { setError(String(error)); }
-        }}><FolderOpen size={16} /><span>{settings.folder || defaultFolder || 'Videos/ediciones'}</span></button>
+        }} title={settings.folder || defaultFolder || 'Videos/ediciones'}><FolderOpen size={16} /><span>{settings.folder || defaultFolder || 'Videos/ediciones'}</span></button>
+        </label>
       </fieldset>
+      <p className={`automatic-style ${styleReady ? 'ready' : ''}`} role="status">{checking ? 'Comprobando estilo…' : styleReady ? `Estilo ${settings.orientation} del editor manual ✓` : `Guarda primero un estilo ${settings.orientation} en el editor manual.`}</p>
       {!desktop && <p className="inline-error">Abre la aplicación de escritorio para descargar y procesar videos.</p>}
       {tools.filter(tool => !tool.available).map(tool => <p className="inline-error" key={tool.name}>{tool.version}</p>)}
       {progress && <div className="export-progress" role="status"><div><span>{cancelling ? 'Cancelando…' : progress.stage}</span><strong>{Math.floor(progress.percent)} %</strong></div><progress max={100} value={progress.percent} /></div>}

@@ -29,7 +29,7 @@ Reglas adoptadas:
 
 - Calidad preferida predeterminada: 1080p; si no está disponible, usar 720p.
 - Permitir configurar preferencia de 720p para priorizar menor tamaño y tiempo.
-- Si no existe ninguna de las dos calidades, informar la situación; no elegir otra silenciosamente.
+- Si no existe ninguna de las dos calidades, descargar la mejor inferior disponible (autorizado el 4 de noviembre de 2026), sin aumentar artificialmente sus dimensiones.
 - No aumentar artificialmente la resolución de la descarga para presentarla como 720p o 1080p.
 - Si el proveedor entrega video y audio separados, combinarlos antes de procesar la edición.
 - Distinguir calidad descargada de resolución exportada. Como salida predeterminada se propone la opción «Original» del editor, adaptada a la orientación y sin aumento de resolución, conservando sus reglas de FPS y codificación.
@@ -98,7 +98,7 @@ Si falta un estilo válido con ajustes de video, detener el trabajo con un mensa
 ## Alcance confirmado y mejoras futuras
 
 - Solo YouTube; recepción por pantalla automática dentro de la app.
-- 1080p con alternativa 720p, o solo 720p; error si no está disponible ninguna calidad admitida.
+- 1080p con alternativa 720p, o preferencia 720p; error si no está disponible ninguna calidad admitida.
 - Orientación elegida por el usuario; FFprobe verifica las dimensiones y la duración descargadas.
 - Textos fijos y tiempos actuales del estilo, limitados a la duración final del clip.
 - Conservar originales; no guardar automáticamente proyectos en la biblioteca manual.

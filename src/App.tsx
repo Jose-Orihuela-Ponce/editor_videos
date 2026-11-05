@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { FormEvent } from 'react';
-import { ArrowRight, CheckCircle2, Clapperboard, Clock3, FolderOpen, HardDrive, LayoutGrid, Monitor, Plus, Smartphone, X } from 'lucide-react';
+import { ArrowRight, CheckCircle2, Clapperboard, Clock3, FolderOpen, HardDrive, LayoutGrid, Monitor, Smartphone, X } from 'lucide-react';
 import { getCurrentWindow } from '@tauri-apps/api/window';
 import { api, desktop } from './core/api';
 import type { Library, Orientation, RecentProject, ToolStatus } from './core/project';
@@ -127,10 +127,7 @@ export default function App() {
     {!project ? <div className="home-layout">
       <aside className="sidebar">
         <Brand />
-        <div className="workspace-label">TU ESPACIO</div>
         <div className="nav-item active"><LayoutGrid size={18} /><span>Mis proyectos</span><span className="count">{library.projects.length}</span></div>
-        <div className="sidebar-bottom"><div className="local-symbol"><HardDrive size={19} /></div><strong>Todo queda contigo</strong><p>Tus proyectos y archivos,<br />en tu propio equipo.</p><span className="local-pill"><span />100% local</span></div>
-        <div className="sidebar-version">EDITOR <span>v0.1</span></div>
       </aside>
       <main className="home-main">
         <div className="mode-selector" aria-label="Modo de trabajo"><button className={!automatic ? 'primary-button' : 'secondary-button'} disabled={automaticBusy} onClick={() => setAutomatic(false)}>Editor manual</button><button className={automatic ? 'primary-button' : 'secondary-button'} disabled={automaticBusy} onClick={() => setAutomatic(true)}>Modo automático</button></div>
@@ -139,11 +136,11 @@ export default function App() {
         <section className="format-cards" aria-label="Crear un proyecto">
           {(['horizontal', 'vertical'] as Orientation[]).map(orientation => <button key={orientation} className={`format-card ${orientation}`} onClick={() => { setNewName('Mi video'); setNewOrientation(orientation); }} disabled={busy}>
             <FormatArt orientation={orientation} />
-            <div className="format-card-content"><div><div className="format-card-title">Proyecto {orientation}<span className="new-arrow"><ArrowRight size={17} /></span></div><p>{orientation === 'horizontal' ? 'Para historias que necesitan espacio.' : 'Para historias que van contigo.'}</p><span className="format-spec">{orientation === 'horizontal' ? '1920 × 1080' : '1080 × 1920'}<span>·</span>{orientation === 'horizontal' ? '16:9' : '9:16'}</span></div></div>
+            <div className="format-card-content"><div><div className="format-card-title">Proyecto {orientation}<span className="new-arrow"><ArrowRight size={17} /></span></div><span className="format-spec">{orientation === 'horizontal' ? '1920 × 1080' : '1080 × 1920'}<span>·</span>{orientation === 'horizontal' ? '16:9' : '9:16'}</span></div></div>
           </button>)}
         </section>
-        <section className="recent-section"><div className="recent-heading"><h2>Proyectos recientes <span>{library.projects.length}</span></h2><span>Continúa donde lo dejaste</span></div>
-          {loading ? <div className="empty-recent"><span className="loading-ring" /><p>Buscando tus proyectos…</p></div> : libraryError ? <div className="empty-recent error-state"><p>{libraryError}</p><button className="secondary-button" onClick={() => void refreshLibrary()}>Reintentar</button></div> : library.projects.length ? <div className="recent-grid">{library.projects.map(recent => <RecentCard key={recent.filePath} project={recent} disabled={busy} onOpen={() => void openProject(recent.filePath)} />)}</div> : <div className="empty-recent"><div className="empty-icon"><FolderOpen size={28} strokeWidth={1.3} /><span><Plus size={11} /></span></div><h3>Un buen comienzo está en blanco.</h3><p>Crea tu primer proyecto. Lo encontrarás aquí cuando lo guardes.</p></div>}
+        <section className="recent-section"><div className="recent-heading"><h2>Proyectos recientes <span>{library.projects.length}</span></h2></div>
+          {loading ? <div className="empty-recent"><span className="loading-ring" /><p>Buscando tus proyectos…</p></div> : libraryError ? <div className="empty-recent error-state"><p>{libraryError}</p><button className="secondary-button" onClick={() => void refreshLibrary()}>Reintentar</button></div> : library.projects.length ? <div className="recent-grid">{library.projects.map(recent => <RecentCard key={recent.filePath} project={recent} disabled={busy} onOpen={() => void openProject(recent.filePath)} />)}</div> : <div className="empty-recent"><FolderOpen size={22} strokeWidth={1.3} /><p>No hay proyectos guardados.</p></div>}
           {library.warnings.length > 0 && <p className="library-warning">{library.warnings.join(' ')}</p>}
         </section>
         </>}

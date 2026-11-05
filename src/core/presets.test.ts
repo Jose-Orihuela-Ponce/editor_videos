@@ -20,12 +20,12 @@ it('guarda y aplica video y textos como una acción, preservando cortes, tiempos
 it('conserva velocidad y volumen en el estilo y al aplicarlo, sin modificar los cortes', () => {
  const p=createEmptyProject('Velocidad y volumen','horizontal'); appendMedia(p,[video,video]);
  const [first,second]=p.main;
- updateClipSettings(p,first.id,{speed:2,volume:1.75});
+ updateClipSettings(p,first.id,{speed:1.04,volume:1.75});
  const style=JSON.parse(JSON.stringify(captureStyle(p,first)));
- expect(style.clip.speed).toBe(2);expect(style.clip.volume).toBe(1.75);
+ expect(style.clip.speed).toBe(1.04);expect(style.clip.volume).toBe(1.75);
  const store=useProjectStore.getState;store().load(p);
  store().edit(draft=>applyStyle(draft,second.id,style));
- expect(store().project!.main[1]).toMatchObject({speed:2,volume:1.75,srcStart:0,srcEnd:8});
+ expect(store().project!.main[1]).toMatchObject({speed:1.04,volume:1.75,srcStart:0,srcEnd:8});
  store().undo();expect(store().project!.main[1]).toMatchObject({speed:1,volume:1});
- store().redo();expect(store().project!.main[1]).toMatchObject({speed:2,volume:1.75});
+ store().redo();expect(store().project!.main[1]).toMatchObject({speed:1.04,volume:1.75});
 });

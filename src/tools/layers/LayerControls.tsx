@@ -68,7 +68,7 @@ export default function LayerControls({ project, item, onNotice }: Props) {
       <div className="tool-field-pair"><NumberField label="Posición X" unit="px" value={visual.posX} min={-2 * project.canvas.w} max={2 * project.canvas.w} precision={0} onNotice={onNotice} onChange={(posX, g) => update({ posX }, g)} /><NumberField label="Posición Y" unit="px" value={visual.posY} min={-2 * project.canvas.h} max={2 * project.canvas.h} precision={0} onNotice={onNotice} onChange={(posY, g) => update({ posY }, g)} /></div>
     </section></details>}
     {(audio || visual?.type === 'video') && <details className="clip-tool-group" open={audio ? true : undefined}><summary>Velocidad y volumen</summary><section className="clip-tool-section">
-      <NumberField label="Velocidad" unit="×" value={audio?.speed ?? visual?.speed ?? 1} min={0.25} max={4} step={0.05} onNotice={onNotice} onChange={(speed, g) => update({ speed }, g)} />
+      <NumberField label="Velocidad" unit="×" value={audio?.speed ?? visual?.speed ?? 1} min={0.25} max={4} step={0.01} onNotice={onNotice} onChange={(speed, g) => update({ speed }, g)} />
       <NumberField label="Volumen" unit="%" value={(audio?.volume ?? visual?.volume ?? 1) * 100} min={0} max={200} precision={0} slider onNotice={onNotice} onChange={(volume, g) => update({ volume: volume / 100 }, g)} />
       {(audio?.volume ?? visual?.volume ?? 1) > 1.5 && <p className="tool-volume-warning">Por encima de 150% puede haber distorsión.</p>}
     </section></details>}

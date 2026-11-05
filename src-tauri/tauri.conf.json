@@ -11,7 +11,7 @@
   },
   "app": {
     "windows": [
-      { "title": "Editor", "width": 1320, "height": 860, "minWidth": 960, "minHeight": 640, "backgroundColor": "#141619", "dragDropEnabled": false }
+      { "title": "Editor", "width": 1000, "height": 620, "minWidth": 720, "minHeight": 420, "center": true, "preventOverflow": true, "backgroundColor": "#141619", "dragDropEnabled": false }
     ],
     "security": {
       "csp": "default-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: asset: http://asset.localhost; media-src 'self' asset: http://asset.localhost; connect-src ipc: http://ipc.localhost",

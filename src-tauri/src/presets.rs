@@ -167,9 +167,16 @@ mod tests {
         let repo = Repository::new(dir.clone());
         let text:TextStyle=serde_json::from_value(serde_json::json!({"font":"Montserrat","size":80,"color":"#ffffff","bold":true,"italic":true,"underline":true,"bgEnabled":false,"bgOpacity":0.5,"opacity":0.8,"align":"center"})).unwrap();
         let preset = Preset {
-            clip: None,
-            text: Some(text),
-            texts: None,
+            clip: Some(serde_json::from_value(serde_json::json!({
+                "speed":1.04,"volume":1.35,"flipH":true,"flipV":true,
+                "zoom":1.2,"stretchX":1.1,"stretchY":0.9,"posX":42,"posY":-37,
+                "crop":{"x":0.1,"y":0.1,"w":0.8,"h":0.8}
+            })).unwrap()),
+            text: Some(text.clone()),
+            texts: Some(vec![
+                StyleText { text: "Primera línea\nSegunda línea: áéíóú 🎬".into(), style: text.clone(), pos_x: 30.0, pos_y: -70.0, scale: 1.2, start: 0.0, duration: 3.0 },
+                StyleText { text: "Otro texto completo".into(), style: text, pos_x: 31.0, pos_y: -70.0, scale: 1.2, start: 1.0, duration: 3.0 },
+            ]),
         };
         save(&repo, Orientation::Horizontal, preset.clone()).unwrap();
         let reopened = Repository::new(dir.clone());

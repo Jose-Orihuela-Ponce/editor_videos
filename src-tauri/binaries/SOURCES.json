@@ -3,15 +3,15 @@
   "binaries": [
     {
       "name": "ffmpeg",
-      "version": "ffmpeg version 8.0.1-full_build-www.gyan.dev Copyright (c) 2000-2025 the FFmpeg developers",
-      "sha256": "74db6c184a03dba2bdfe23e1a1f41cf5a8385bc1de6a7a1b26db1dc541abef93",
-      "bytes": 211091968
+      "version": "ffmpeg version 9.0.2-full_build-www.gyan.dev Copyright (c) 2000-2026 the FFmpeg developers",
+      "sha256": "589e50b766d251afdf181dd664d40bd94407e200b019989fd7468c7d118a28d0",
+      "bytes": 227823104
     },
     {
       "name": "ffprobe",
-      "version": "ffprobe version 8.0.1-full_build-www.gyan.dev Copyright (c) 2007-2025 the FFmpeg developers",
-      "sha256": "55bb6c6289367ae2383efa86b26bf2596f8adb72ac747360eb13df162354161c",
-      "bytes": 210895360
+      "version": "ffprobe version 9.0.2-full_build-www.gyan.dev Copyright (c) 2007-2026 the FFmpeg developers",
+      "sha256": "02264dfa4f56baaa31e443ece8aa16d397f6b008200e7fd184d22b9009e75fd3",
+      "bytes": 227621376
     }
   ]
 }

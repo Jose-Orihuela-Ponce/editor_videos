@@ -142,8 +142,93 @@
 .automatic-mode fieldset{padding:0;margin:0;border:0;min-width:0}
 .automatic-mode .text-input{margin-top:8px}
 .automatic-mode .export-fields{margin-top:18px}
+.automatic-mode .text-input:disabled{opacity:.65;cursor:default}
 .automatic-style{font-size:13px;color:#f3c48a;margin:20px 0}
 .automatic-style.ready{color:#9acbb6}
 .automatic-mode .modal-note,.automatic-mode .export-success p{overflow-wrap:anywhere}
 .automatic-mode .inline-error pre{white-space:pre-wrap;overflow-wrap:anywhere}
 .automatic-mode .export-success button{margin-top:12px}
+
+/* Fit the available window; scroll content inside the workspace. */
+html,body,#root{width:100%;height:100%;min-width:0;min-height:0}
+body{overflow:hidden}
+.app-shell{height:100dvh;min-height:0;display:flex;flex-direction:column}
+.preview-banner{flex-shrink:0;padding:5px 12px;font-size:10px}
+.home-layout{flex:1;min-height:0;flex-direction:column;overflow:hidden}
+.sidebar{width:auto;flex-direction:row;align-items:center;gap:24px;padding:10px 18px;border-right:0;border-bottom:1px solid var(--line);flex-shrink:0}
+.sidebar>.brand{margin:0;font-size:22px}
+.sidebar .brand-icon{width:30px;height:30px}
+.sidebar .nav-item{margin-left:auto;padding:7px 10px;gap:8px}
+.home-main{width:100%;max-width:1200px;margin:0 auto;padding:0 20px;flex:1;min-height:0;overflow:auto}
+.mode-selector{margin:14px 0;gap:8px;flex-shrink:0}
+.home-actions{margin:0 0 10px;gap:12px}
+.format-cards{gap:12px;flex-shrink:0;grid-template-columns:repeat(2,minmax(0,1fr))}
+.format-card{display:flex;align-items:center;min-width:0}
+.format-card>.format-art{width:120px;height:112px;flex-shrink:0}
+.format-card .art-frame{transform:scale(.6)}
+.format-card .aspect-tag,.format-card .art-dot{display:none}
+.format-card-content{padding:14px;flex:1;min-width:0}
+.format-card-title{font-size:14px}
+.recent-section{margin-top:20px;min-height:0;flex:1}
+.empty-recent{min-height:90px;margin-top:12px;padding:14px}
+.recent-grid{grid-template-columns:repeat(auto-fit,minmax(min(260px,100%),1fr));gap:10px}
+.home-footer{height:auto;min-height:34px;margin-top:12px;gap:10px}
+.automatic-mode{width:100%;max-width:960px;align-self:center;padding:18px;border-radius:10px}
+.automatic-heading{gap:10px;margin-bottom:16px}
+.automatic-heading h1{font-size:20px;letter-spacing:-.4px}
+.automatic-mode .automatic-fields{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:12px}
+.automatic-fields>.field-label{grid-column:span 2;margin:0;min-width:0}
+.automatic-fields>.automatic-url{grid-column:span 3}
+.automatic-fields>.automatic-name{grid-column:span 3}
+.automatic-mode .text-input,.automatic-fields .export-folder{margin-top:6px;min-width:0}
+.automatic-fields .export-folder{min-height:36px;padding:8px 10px}
+.automatic-style{margin:12px 0 0;font-size:12px}
+.automatic-mode .modal-actions{margin-top:14px}
+.automatic-mode .export-progress,.automatic-mode .export-success,.automatic-mode .inline-error{margin-top:12px}
+.automatic-mode .export-progress>div{gap:12px;overflow-wrap:anywhere}
+.automatic-mode .export-progress progress{margin:7px 0 0}
+.modal{max-height:calc(100dvh - 24px);max-width:calc(100vw - 24px);overflow:auto;padding:20px}
+.editor-layout{height:100%;min-height:0;flex:1;overflow:hidden}
+.editor-topbar{height:auto;min-height:52px;padding:8px 12px;gap:10px;flex-wrap:wrap}
+.project-title{flex:1;min-width:100px}
+.project-title strong{max-width:100%}
+.topbar-actions{gap:6px;flex-wrap:wrap;min-width:0}
+.topbar-actions .primary-button,.topbar-actions .secondary-button{padding:8px 10px;font-size:11px;min-height:32px}
+.editor-workspace{min-height:0;grid-template-columns:clamp(130px,18vw,190px) minmax(0,1fr) clamp(190px,25vw,260px);overflow:hidden}
+.editor-workspace>aside{min-width:0}
+.properties-panel{padding:0 12px}
+.canvas-area{padding:10px 14px}
+.media-grid{grid-template-columns:repeat(auto-fit,minmax(min(120px,100%),1fr))}
+.editor-layout:not(.vertical)>.timeline{height:min(var(--timeline-height,242px),34dvh);min-height:120px;overflow:hidden}
+.editor-layout.vertical>.timeline{overflow:hidden}
+.timeline-toolbar{min-width:0;padding:4px 10px;column-gap:8px}
+.timeline-body{min-width:0}
+.editor-layout.vertical{grid-template-columns:minmax(130px,1fr) clamp(190px,25vw,245px) clamp(210px,38vw,520px);grid-template-rows:auto minmax(0,1fr) min(var(--timeline-height,242px),34dvh) 28px}
+.editor-layout.vertical .canvas-area{padding:10px}
+.editor-footer{height:28px;min-height:0;min-width:0;overflow:hidden;padding:0 10px;gap:8px}
+.editor-footer>span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+@media(max-width:900px){
+  .editor-topbar .topbar-actions{width:auto;justify-content:flex-end;flex-wrap:nowrap}
+  .topbar-actions>button[aria-label="Guardar proyecto"],.topbar-actions>button[aria-label="Exportar"]{font-size:0;gap:0;min-width:34px}
+  .editor-topbar .topbar-divider{display:none}
+  .home-main{padding:0 14px}
+  .format-card>.format-art{width:88px;height:98px}
+}
+@media(max-width:640px){
+  .sidebar{padding:8px 12px}
+  .format-cards{grid-template-columns:1fr}
+  .format-card>.format-art{height:80px}
+  .automatic-mode{padding:14px}
+  .automatic-fields>.automatic-url,.automatic-fields>.automatic-name,.automatic-fields>.automatic-folder{grid-column:1/-1}
+  .automatic-fields>.field-label:not(.automatic-url):not(.automatic-name):not(.automatic-folder){grid-column:span 3}
+  .home-footer>span:last-child{max-width:48%}
+}
+@media(max-height:600px){
+  .sidebar{padding-top:6px;padding-bottom:6px}
+  .mode-selector{margin:10px 0}
+  .format-card>.format-art{height:86px}
+  .recent-section{margin-top:14px}
+  .empty-recent{min-height:64px}
+  .automatic-mode{padding:14px}
+  .automatic-heading{margin-bottom:12px}
+}

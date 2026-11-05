@@ -18,8 +18,9 @@ export function automaticProject(media: Media, orientation: Orientation, preset:
   return project;
 }
 
-export function automaticName(title: string) {
-  const clean = title.replace(/[<>:"/\\|?*\x00-\x1f]/g, '_').trim();
+export function automaticName(title: string, customName = '') {
+  const custom = customName.trim();
+  const clean = (custom || title).replace(/[<>:"/\\|?*\x00-\x1f]/g, '_').trim();
   const encoder = new TextEncoder();
   let name = '';
   for (const character of clean) {
@@ -27,6 +28,10 @@ export function automaticName(title: string) {
     name += character;
   }
   name = name.replace(/[. ]+$/, '');
+  if (custom) {
+    const reserved = /^(CON|PRN|AUX|NUL|COM[1-9]|LPT[1-9])(?:\.|$)/i.test(name);
+    return `${reserved ? 'Video - ' : ''}${name || 'Video de YouTube'}`;
+  }
   // Prefix also avoids reserved Windows basenames (CON, AUX, etc.).
   return `Editado - ${name || 'Video de YouTube'}`;
 }

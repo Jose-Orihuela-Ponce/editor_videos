@@ -99,7 +99,21 @@ fn format_selector(quality: &str) -> Result<String, String> {
             format!("bv{portrait}"),
         ]);
     }
+    // Some uploads are SD-only or cropped (e.g. 854x470). Keep their real size.
+    // Exact HD preferences above win; the fallback never exceeds the chosen cap.
+    for side in ["height", "width"] {
+        let limit = format!("[{side}<={quality}]");
+        alternatives.extend([
+            format!("bv*{limit}+ba"),
+            format!("b{limit}"),
+            format!("bv{limit}"),
+        ]);
+    }
     Ok(alternatives.join("/"))
+}
+
+fn valid_resolution(width: u32, height: u32, maximum: u32) -> bool {
+    width > 0 && height > 0 && width.min(height) <= maximum
 }
 
 fn stop_tree(child: &mut Child) {
@@ -143,6 +157,7 @@ pub fn download(
 ) -> Result<DownloadResult, String> {
     let url = youtube_url(url)?;
     let selector = format_selector(quality)?;
+    let maximum_resolution = quality.parse::<u32>().map_err(|_| "Calidad no válida.")?;
     let id = uuid::Uuid::parse_str(job_id).map_err(|_| "Identificador de trabajo no válido.")?;
     let parent = root.join("Automaticos");
     fs::create_dir_all(&parent).map_err(|e| e.to_string())?;
@@ -150,7 +165,8 @@ pub fn download(
     let folder = parent.join(id.to_string());
     fs::create_dir(&folder).map_err(|e| format!("No se pudo crear la carpeta del trabajo: {e}"))?;
     let result = download_into(
-        &folder, downloader, node, ffmpeg, ffprobe, &url, &selector, job_id, cancel, report,
+        &folder, downloader, node, ffmpeg, ffprobe, &url, &selector,
+        maximum_resolution, job_id, cancel, report,
     );
     if result.as_ref().map(|r| r.cancelled).unwrap_or(true) {
         // Only the unique, validated work directory created by this invocation is disposable.
@@ -171,6 +187,7 @@ fn download_into(
     ffprobe: &Path,
     url: &str,
     selector: &str,
+    maximum_resolution: u32,
     job_id: &str,
     cancel: &AtomicBool,
     report: impl Fn(Progress),
@@ -313,7 +330,7 @@ fn download_into(
         return Ok(cancelled());
     }
     if !status.success() {
-        return Err(format!("No se pudo descargar el video en 720p/1080p. Revisa el enlace y la disponibilidad en YouTube.\n{}", lines.into_iter().collect::<Vec<_>>().join("\n")));
+        return Err(format!("No se pudo descargar un formato de video disponible. Revisa el enlace y los detalles de YouTube.\n{}", lines.into_iter().collect::<Vec<_>>().join("\n")));
     }
     let path = media::local_path(&path.ok_or("YouTube no entregó un video descargable. No se admiten directos en curso ni estrenos pendientes.")?)?;
     let canonical_folder = fs::canonicalize(folder).map_err(|e| e.to_string())?;
@@ -326,9 +343,10 @@ fn download_into(
         stage: "Comprobando video descargado".into(),
     });
     let media = media::probe(&path, ffprobe)?;
-    let resolution = media.w.unwrap_or(0).min(media.h.unwrap_or(0));
-    if media.kind != "video" || ![720, 1080].contains(&resolution) {
-        return Err("La descarga no tiene una resolución válida de 720p o 1080p.".into());
+    if media.kind != "video"
+        || !valid_resolution(media.w.unwrap_or(0), media.h.unwrap_or(0), maximum_resolution)
+    {
+        return Err("La descarga no contiene video válido dentro de la calidad elegida.".into());
     }
     let record = serde_json::json!({ "version": 1, "url": url, "title": title, "media": media });
     fs::write(
@@ -374,12 +392,19 @@ mod tests {
         }
     }
     #[test]
-    fn quality_uses_exact_short_side_and_fallback_only_when_requested() {
+    fn quality_prefers_hd_then_allows_lower_real_resolutions() {
         let selector = format_selector("1080").unwrap();
         assert!(selector.find("height=1080").unwrap() < selector.find("height=720").unwrap());
         assert!(selector.contains("[width=1080][height>=1080]"));
         assert!(!format_selector("720").unwrap().contains("1080"));
         assert!(format_selector("480").is_err());
+        assert!(selector.find("height=720").unwrap() < selector.find("height<=1080").unwrap());
+        assert!(valid_resolution(854, 470, 720));
+        assert!(valid_resolution(470, 854, 720));
+        assert!(valid_resolution(1920, 1056, 1080));
+        assert!(!valid_resolution(1920, 1080, 720));
+        assert!(!valid_resolution(3840, 2160, 1080));
+        assert!(!valid_resolution(0, 720, 1080));
     }
 
     #[test]
@@ -439,9 +464,27 @@ mod tests {
                 Some("silent"),
             ),
             (
+                "sd_fallback",
+                "1080",
+                vec![video("480", 854, 470), video("360", 640, 352), audio.clone()],
+                Some("480+audio"),
+            ),
+            (
+                "cropped_hd_fallback",
+                "720",
+                vec![video("cropped720", 1280, 704), video("1080", 1920, 1080), audio.clone()],
+                Some("cropped720+audio"),
+            ),
+            (
+                "portrait_sd_fallback",
+                "720",
+                vec![video("portrait480", 470, 854), audio.clone()],
+                Some("portrait480+audio"),
+            ),
+            (
                 "unavailable",
                 "1080",
-                vec![video("480", 854, 480), audio],
+                vec![video("4k", 3840, 2160), audio],
                 None,
             ),
         ] {
@@ -476,7 +519,7 @@ mod tests {
                 }
                 None => assert!(
                     !output.status.success(),
-                    "No debe elegir 480p silenciosamente"
+                    "No debe superar la calidad elegida"
                 ),
             }
         }
