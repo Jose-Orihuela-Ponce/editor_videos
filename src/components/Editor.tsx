@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import type { CSSProperties, ReactNode } from 'react';
-import { ArrowDownToLine, ArrowLeft, ArrowRight, Check, CheckCircle2, ChevronDown, Clapperboard, Film, Image as ImageIcon, Layers2, Monitor, Music2, Pause, Play, Plus, Redo2, Save, SkipBack, SkipForward, Smartphone, Undo2 } from 'lucide-react';
+import { ArrowDownToLine, ArrowLeft, ArrowRight, Check, CheckCircle2, ChevronDown, Clapperboard, Film, Image as ImageIcon, Layers2, Maximize, Minimize, Monitor, Music2, Pause, Play, Plus, Redo2, Save, SkipBack, SkipForward, Smartphone, Undo2 } from 'lucide-react';
 import { api, desktop } from '../core/api';
 import type { Project } from '../core/project';
 import { hasUnsavedChanges, useProjectStore } from '../core/store';
@@ -32,9 +32,13 @@ export default function Editor({ project, saving, onBack, onSave, onNotice, engi
   const [start, setStart] = useState('0');
   const [layerController, setLayerController] = useState<PlaybackController | null>(null);
   const [cropClipId, setCropClipId] = useState<string | null>(null);
+  const previewPanel = useRef<HTMLElement>(null);
+  const [previewFullscreen, setPreviewFullscreen] = useState(false);
   const arrowGroup = useRef<string | undefined>(undefined);
   const duration = projectDuration(project);
   const selected = project.main.find(c => c.id === selectedId);
+  const cropEditing = !previewFullscreen && !!selected && cropClipId === selected.id;
+  const fullscreenLabel = previewFullscreen ? 'Salir de pantalla completa' : 'Pantalla completa';
   const selectedLayer = project.overlays.find(item => item.id === selectedId) ?? project.audio.find(item => item.id === selectedId);
   const visualRows = new Set([0, ...project.overlays.map(item => item.track ?? 0)]).size;
   const audioRows = new Set([0, ...project.audio.map(item => item.track ?? 0)]).size;
@@ -52,6 +56,23 @@ export default function Editor({ project, saving, onBack, onSave, onNotice, engi
   useEffect(() => { if (selectedId && !project.main.some(c => c.id === selectedId) && !project.overlays.some(c => c.id === selectedId) && !project.audio.some(c => c.id === selectedId)) selectClip(null); }, [project.main, project.overlays, project.audio, selectedId]);
   useEffect(() => { setCropClipId(null); }, [selectedId, project.id]);
   useEffect(() => { if (playing) setCropClipId(null); }, [playing]);
+
+  useEffect(() => {
+    const updateFullscreen = () => setPreviewFullscreen(!!document.fullscreenElement && document.fullscreenElement === previewPanel.current);
+    document.addEventListener('fullscreenchange', updateFullscreen);
+    return () => document.removeEventListener('fullscreenchange', updateFullscreen);
+  }, []);
+
+  async function togglePreviewFullscreen() {
+    const panel = previewPanel.current;
+    if (!panel) return;
+    try {
+      if (document.fullscreenElement === panel) await document.exitFullscreen();
+      else await panel.requestFullscreen();
+    } catch {
+      onNotice('No se pudo cambiar la pantalla completa.', true);
+    }
+  }
 
   const actions = useRef({ copy: () => {}, paste: () => {}, split: () => {}, remove: () => {}, nudge: (_key: string, _step: number) => {} });
   actions.current.copy = () => {
@@ -115,6 +136,14 @@ export default function Editor({ project, saving, onBack, onSave, onNotice, engi
   };
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
+      if (document.fullscreenElement && document.fullscreenElement === previewPanel.current) {
+        if (event.key === 'Escape') {
+          event.preventDefault();
+          void document.exitFullscreen().catch(() => onNotice('No se pudo salir de pantalla completa.', true));
+          return;
+        }
+        if (event.code !== 'Space' && event.key !== ',' && event.key !== '.') return;
+      }
       if ((event.ctrlKey || event.metaKey) && event.altKey && !(event.target as HTMLElement).closest('input,textarea,select,[contenteditable="true"]') && !document.querySelector('dialog[open]')) { if (event.key.toLowerCase() === 'c') { event.preventDefault(); actions.current.copy(); } else if (event.key.toLowerCase() === 'v') { event.preventDefault(); actions.current.paste(); } return; }
       if (event.ctrlKey || event.metaKey || event.altKey || (event.target as HTMLElement).closest('input,textarea,select,[contenteditable="true"]') || document.querySelector('dialog[open]')) return;
       if (event.code === 'Space') {
@@ -129,7 +158,7 @@ export default function Editor({ project, saving, onBack, onSave, onNotice, engi
     const endArrow = () => { arrowGroup.current = undefined; };
     window.addEventListener('keydown', onKey); window.addEventListener('keyup', endArrow); window.addEventListener('blur', endArrow);
     return () => { window.removeEventListener('keydown', onKey); window.removeEventListener('keyup', endArrow); window.removeEventListener('blur', endArrow); };
-  }, []);
+  }, [onNotice]);
   function seek(value: number) { if (Number.isFinite(value)) { setCropClipId(null); playback.current?.pause(); void playback.current?.seek(value, false); } }
   async function importVideos() {
     if (importing) return;
@@ -203,7 +232,42 @@ export default function Editor({ project, saving, onBack, onSave, onNotice, engi
     <header className="editor-topbar"><button className="back-button" disabled={exporting} onClick={onBack} aria-label="Volver al inicio"><ArrowLeft size={18} /><span className="brand-icon"><Clapperboard size={17} /></span></button><span className="topbar-divider" /><div className="project-title"><strong>{project.name || 'Sin nombre'}</strong><span className={dirty ? 'unsaved' : ''}>{dirty ? 'Sin guardar' : <><Check size={12} />Guardado</>}</span></div><div className="topbar-actions"><button className="secondary-button" disabled={presetBusy || !desktop || !selectedId} onClick={() => void savePreset()}>Guardar estilo</button><button className="secondary-button" disabled={!selectedId || (!presets[project.orientation].clip && !presets[project.orientation].text)} onClick={applyPreset}>Aplicar estilo</button><button className="icon-button" aria-label="Deshacer" title="Deshacer · Ctrl+Z" disabled={!past.length} onClick={() => useProjectStore.getState().undo()}><Undo2 size={18} /></button><button className="icon-button" aria-label="Rehacer" title="Rehacer · Ctrl+Shift+Z" disabled={!future.length} onClick={() => useProjectStore.getState().redo()}><Redo2 size={18} /></button><span className="topbar-divider" /><button aria-label="Guardar proyecto" title="Guardar proyecto" className="secondary-button" onClick={onSave} disabled={saving || !desktop}><Save size={16} />{saving ? 'Guardando…' : 'Guardar'}</button><button aria-label="Exportar" title="Exportar" className="primary-button" disabled={!duration || !desktop || importing} onClick={() => { playback.current?.pause(); setExportOpen(true); }}><ArrowDownToLine size={16} />Exportar</button></div></header>
     <div className={`editor-workspace ${project.orientation}`}>
       <aside className="media-panel"><div className="panel-heading">Medios<span>{project.media.length}</span><button className="icon-button" aria-label="Agregar archivos" title="Agregar archivos" disabled={importing || !desktop} onClick={() => void importVideos()}><Plus size={16} /></button></div>{missing.length > 0 && <div className="missing-media" role="status"><strong>Archivos no encontrados</strong>{missing.map(id => { const media = project.media.find(m => m.id === id); return media ? <div key={id}><span title={media.path}>{fileName(media.path)}</span><button className="secondary-button" onClick={() => void locateMedia(id)}>Localizar</button></div> : null; })}</div>}{project.media.length ? <div className="media-grid">{project.media.map(media => <div className="media-card" key={media.id}><button className="media-card-main" title={media.kind === 'video' ? 'Añadir a la pista principal' : 'Añadir a la línea de tiempo'} aria-label={`Añadir ${fileName(media.path)}${media.kind === 'video' ? ' al final' : ''}`} onClick={() => appendAgain(media.id)}>{media.thumbnail ? <img src={mediaUrl(media.thumbnail)} alt="" /> : media.kind === 'audio' ? <Music2 size={25} /> : media.kind === 'image' ? <ImageIcon size={25} /> : <Film size={25} />}<strong>{fileName(media.path)}</strong><small>{media.kind === 'image' ? `Imagen · ${media.w} × ${media.h}` : `${formatTime(media.duration)}${media.kind === 'video' ? ` · ${media.w} × ${media.h}` : ' · Audio'}`}</small></button>{media.kind === 'video' && <button className="media-card-add" aria-label={`Añadir ${fileName(media.path)} como capa`} title="Añadir como video superpuesto" onClick={() => addAsLayer(media.id)}><Layers2 size={14} /></button>}</div>)}</div> : <div className="media-empty"><Film size={31} strokeWidth={1.2} /><strong>Tu biblioteca de medios</strong><p>Añade videos, imágenes o audio para empezar a editar.</p><button className="secondary-button" disabled={importing || !desktop} onClick={() => void importVideos()}><Plus size={16} />{importing ? 'Analizando…' : 'Agregar archivos'}</button></div>}{proxyWorking.some(path => project.media.some(m => m.path === path)) && <p className="importing-status"><span className="loading-ring" />Preparando vista previa…</p>}{importing && <p className="importing-status"><span className="loading-ring" />Analizando archivos y miniaturas…</p>}</aside>
-      <section className="preview-panel"><div className="preview-heading"><span>VISTA PREVIA</span><span>{project.canvas.w} × {project.canvas.h}<ChevronDown size={13} /></span></div><div className="canvas-area"><div className={`video-canvas ${project.orientation}`}><PreviewFrame editingDisabled={loading || !!error || exporting} onInteract={id => { playback.current?.pause(); selectClip(id); setCropClipId(null); }} project={project} time={time} videoRef={video} selected={selected} cropEditing={cropClipId === selected?.id} onNotice={onNotice} /><LayerPreview project={project} controller={layerController} suppressed={!!selected && cropClipId === selected.id} onNotice={onNotice} onSelect={id => { playback.current?.pause(); selectClip(id); setCropClipId(null); }} />{fitGuide && <span className="text-fit-guide" aria-hidden="true" style={{ left: `${fitGuide.left / project.canvas.w * 100}%`, top: `${fitGuide.top / project.canvas.h * 100}%`, width: `${fitGuide.width / project.canvas.w * 100}%`, height: `${fitGuide.height / project.canvas.h * 100}%` }} />}<span className="canvas-corner tl" /><span className="canvas-corner tr" /><span className="canvas-corner bl" /><span className="canvas-corner br" />{!duration && <div className="canvas-empty"><Clapperboard size={31} strokeWidth={1.1} /><p>Aquí empieza tu historia</p><span>Añade tu primer video</span></div>}{loading && <div className="preview-loading"><span className="loading-ring" /><span>Cargando fotograma…</span></div>}{error && <div className="preview-error" role="alert">{error}</div>}</div></div><div className="playback-bar"><label className="playback-time"><input aria-label="Posición del cabezal en segundos" type="number" min={0} max={duration} step="any" value={Number(time.toFixed(3))} disabled={!duration} onChange={e => seek(Number(e.target.value))} /><span>/ {formatTime(duration)}</span></label><div className="playback-buttons"><button className="icon-button" aria-label="Fotograma anterior" disabled={!duration} onClick={() => seek((playback.current?.time ?? time) - 1 / project.canvas.fps)}><SkipBack size={13} /></button><button className="play-button" disabled={!duration} aria-label={playing ? 'Pausar' : 'Reproducir'} onClick={() => playback.current?.toggle()}>{playing ? <Pause size={13} /> : <Play size={13} />}</button><button className="icon-button" aria-label="Fotograma siguiente" disabled={!duration} onClick={() => seek((playback.current?.time ?? time) + 1 / project.canvas.fps)}><SkipForward size={13} /></button></div><span className="preview-zoom">Encajar</span></div></section>
+      <section className="preview-panel" ref={previewPanel}>
+        <div className="preview-heading"><span>VISTA PREVIA</span><span>{project.canvas.w} × {project.canvas.h}<ChevronDown size={13} /></span></div>
+        <div className="canvas-area">
+          <div className={`video-canvas ${project.orientation}`}>
+            <PreviewFrame
+              editingDisabled={previewFullscreen || loading || !!error || exporting}
+              onInteract={id => { playback.current?.pause(); selectClip(id); setCropClipId(null); }}
+              project={project} time={time} videoRef={video} selected={selected}
+              cropEditing={cropEditing} onNotice={onNotice}
+            />
+            <LayerPreview
+              project={project} controller={layerController} suppressed={cropEditing} onNotice={onNotice}
+              onSelect={id => { playback.current?.pause(); selectClip(id); setCropClipId(null); }}
+            />
+            {fitGuide && <span className="text-fit-guide" aria-hidden="true" style={{ left: `${fitGuide.left / project.canvas.w * 100}%`, top: `${fitGuide.top / project.canvas.h * 100}%`, width: `${fitGuide.width / project.canvas.w * 100}%`, height: `${fitGuide.height / project.canvas.h * 100}%` }} />}
+            <span className="canvas-corner tl" /><span className="canvas-corner tr" />
+            <span className="canvas-corner bl" /><span className="canvas-corner br" />
+            {!duration && <div className="canvas-empty"><Clapperboard size={31} strokeWidth={1.1} /><p>Aquí empieza tu historia</p><span>Añade tu primer video</span></div>}
+            {loading && <div className="preview-loading"><span className="loading-ring" /><span>Cargando fotograma…</span></div>}
+            {error && <div className="preview-error" role="alert">{error}</div>}
+          </div>
+        </div>
+        <div className="playback-bar">
+          <div className="playback-time" title="Tiempo actual / duración total">
+            {formatTime(time)} <span>/ {formatTime(duration)}</span>
+          </div>
+          <div className="playback-buttons">
+            <button className="icon-button" aria-label="Fotograma anterior" disabled={!duration} onClick={() => seek((playback.current?.time ?? time) - 1 / project.canvas.fps)}><SkipBack size={13} /></button>
+            <button className="play-button" disabled={!duration} aria-label={playing ? 'Pausar' : 'Reproducir'} onClick={() => playback.current?.toggle()}>{playing ? <Pause size={13} /> : <Play size={13} />}</button>
+            <button className="icon-button" aria-label="Fotograma siguiente" disabled={!duration} onClick={() => seek((playback.current?.time ?? time) + 1 / project.canvas.fps)}><SkipForward size={13} /></button>
+          </div>
+          <button className="icon-button" type="button" aria-label={fullscreenLabel} title={fullscreenLabel} onClick={() => void togglePreviewFullscreen()}>
+            {previewFullscreen ? <Minimize size={16} /> : <Maximize size={16} />}
+          </button>
+        </div>
+      </section>
       <aside className={`properties-panel ${selected || selectedLayer ? 'editing-properties' : ''}`}>{!selected && !selectedLayer && <div className="panel-heading">Proyecto</div>}{selected && <div className="clip-properties">
         <ClipTools key={selected.id} project={project} clip={selected} onNotice={onNotice} cropEditing={cropClipId === selected.id} onCropToggle={() => { if (cropClipId === selected.id) setCropClipId(null); else { seek(selected.start); setCropClipId(selected.id); } }} />
         {!project.autoJoin && <form onSubmit={e => {
