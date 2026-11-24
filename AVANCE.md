@@ -18,7 +18,7 @@ Actualizado: 23 de noviembre de 2026.
 - Se comprobaron aquí ambas descargas nuevas desde YouTube y sus capturas. Se generaron dos reproducciones nuevas y se revisaron; la primera omitió comillas, se corrigió solo esa parte y se reforzó el prompt del helper. Revisión técnica favorable, sin sustituir patrones ni simular aprobación del usuario. Informe público: `references/thumbnails/COMPROBACION_PORTABILIDAD.md`; imágenes e informes en `.local/reproductions/`.
 - Cierre del repositorio: **81 pruebas en 19 archivos y 17 pruebas Rust correctas**, compilación web, sincronización de skills y doctor correctos. Incluye persistencia, historial y exportaciones. Revisión de secretos en archivos, índice e historial sin hallazgos; inventario publicable de 163 archivos, sin videos completos ni adjuntos.
 - `.codex-attachments/` excluido tras detectar la foto del último trabajo como archivo nuevo; el control rechaza también adjuntos y medios completos añadidos a la fuerza. Los PNG aprobados permanecen publicables. Credenciales y producciones privadas se conservan localmente.
-- Este cierre reúne producción, seguridad y portabilidad en un **commit local; sin push**. No se ha instalado ni probado físicamente la otra PC; su agente debe generar y revisar resultados propios.
+- Cierre de producción, seguridad y portabilidad en `21cdde9`, más aclaración del README solicitada por el usuario: novedades, dos miniaturas aprobadas visibles, descripción del estilo y pruebas de edición/miniatura con el usuario. Publicación en GitHub autorizada. Git excluye MP4 (también mayúsculas), MKV, MOV, WEBM y AVI; no hay videos versionados. No se ha probado físicamente la otra PC; su agente debe generar y revisar resultados propios con el usuario.
 
 ## Producciones conservadas
 
@@ -30,7 +30,7 @@ Actualizado: 23 de noviembre de 2026.
 
 ## Pendientes y decisiones vigentes
 
-- Procesamiento de videos cerrado por ahora. Marco Vinelli: título corregido **Ministro Marco Vinelli sobre el fenómeno de El Niño**; miniatura E4 + P2 con foto aportada guardada, sin aprobación explícita de subida. Conservar separados referencia, texto de miniatura y título de publicación. Siguiente paso del repo: publicar el commit local cuando el usuario solicite la subida; después seguir `INSTALACION_EN_OTRA_PC.md` en el otro equipo.
+- Procesamiento de videos cerrado por ahora. Marco Vinelli: título corregido **Ministro Marco Vinelli sobre el fenómeno de El Niño**; miniatura E4 + P2 con foto aportada guardada, sin aprobación explícita de subida. Conservar separados referencia, texto de miniatura y título de publicación. Tras actualizar el otro equipo, seguir `INSTALACION_EN_OTRA_PC.md` y revisar resultados con el usuario.
 - Mantener OAuth en **Pruebas** por decisión del usuario. No se cambió Google Console; el usuario pasará después a producción y reautorizará. El refresh token de Drive de una app externa en Pruebas caduca a los siete días desde el consentimiento; reautorizar y reintentar la entrega existente sin repetir edición.
 - `.env` conserva las credenciales fuera de Git y de las respuestas. No hay cargas ni procesos de autorización pendientes. La revisión de seguridad es preventiva con reglas limitadas.
 - Lectura de JSON con reintentos acotados ante bloqueos transitorios Windows/OneDrive comprobada; no oculta datos corruptos ni bloqueos persistentes.

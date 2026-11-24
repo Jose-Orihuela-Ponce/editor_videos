@@ -6,6 +6,21 @@ Implementadas las etapas 1 (base), 2 (edición básica), 3 (transformaciones), 4
 
 Para actualizar una PC que aún conserva Manual/Automático, seguir [INSTALACION_EN_OTRA_PC.md](INSTALACION_EN_OTRA_PC.md). Incluye las dos skills propias, preparación del entorno, una copia limpia de «Mi estilo» y la migración al ejecutable nuevo. [PRUEBA_DE_REPRODUCCION.md](PRUEBA_DE_REPRODUCCION.md) permite al otro agente repetir los ejemplos aprobados desde URLs, generar imágenes nuevas y documentar diferencias; los videos completos quedan fuera de Git.
 
+## Novedades de esta versión y pruebas con el usuario
+
+Esta versión incorpora producción de videos desde enlaces de YouTube mediante el chat, aplicación del estilo compartido con el editor manual, entrega verificada y reintentable en Google Drive, corrección de títulos y creación asistida de miniaturas. También incluye las skills y las instrucciones para reproducir el flujo en otra PC.
+
+**El agente debe realizar pruebas con el usuario para comprobar que la edición y la miniatura cumplen lo esperado.** En el otro equipo, preparar el entorno, reproducir los dos ejemplos y revisar con el usuario un MP4 exportado y una miniatura nueva. Mostrar los resultados, recoger sus observaciones y ajustar el estilo o las instrucciones si hace falta. Las pruebas automáticas no sustituyen esta revisión ni la aprobación del usuario. Seguir [PRUEBA_DE_REPRODUCCION.md](PRUEBA_DE_REPRODUCCION.md) y conservar las comprobaciones localmente.
+
+Las miniaturas siguen la [skill crear-miniaturas](skills/crear-miniaturas/SKILL.md): entrevistado a la izquierda y presentador a la derecha, rostros grandes con miradas naturales hacia el centro, fondo azul, círculo superior central con la referencia elegida, flecha curva roja y texto inferior blanco muy grueso con contorno negro. El usuario elige las capturas y el mensaje; el agente compone, muestra el resultado y lo ajusta según su valoración.
+
+Se incluyen únicamente estas dos imágenes como ejemplos aprobados del estilo. Sus URLs de video, tiempos, textos y prompts están en las [recetas de reproducción](skills/crear-miniaturas/references/reproduction-cases.json); los videos originales y las exportaciones no se suben a Git.
+
+| Ejemplo aprobado | Miniatura |
+| --- | --- |
+| Luis González-Posada: «Será investigado por Fiscalía y Contraloría», con Carlos Espá en el círculo. | ![Ejemplo aprobado 1](skills/crear-miniaturas/assets/approved-01.png) |
+| Carlos Bruce: «Cuando pierda, no va a aceptar ser mi regidor», con Rafael López Aliaga en el círculo. | ![Ejemplo aprobado 2](skills/crear-miniaturas/assets/approved-02.png) |
+
 ## Repositorio y GitHub
 
 Remoto `origin`: [Jose-Orihuela-Ponce/editor_videos](https://github.com/Jose-Orihuela-Ponce/editor_videos). Rama principal: `main`.
