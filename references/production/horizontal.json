@@ -1,0 +1,43 @@
+{
+  "clip": {
+    "speed": 1.04,
+    "volume": 1.0,
+    "flipH": false,
+    "flipV": false,
+    "zoom": 1.0,
+    "stretchX": 1.1,
+    "stretchY": 1.15,
+    "posX": 27.0,
+    "posY": 36.0,
+    "crop": {
+      "x": 0.0,
+      "y": 0.0,
+      "w": 1.0,
+      "h": 1.0
+    }
+  },
+  "text": null,
+  "texts": [
+    {
+      "text": "Fuente: Canal N",
+      "style": {
+        "font": "Montserrat",
+        "size": 41.0,
+        "color": "#ffffff",
+        "bgColor": "#000000",
+        "bgOpacity": 0.5,
+        "bgEnabled": false,
+        "bold": true,
+        "italic": false,
+        "underline": false,
+        "opacity": 1.0,
+        "align": "center"
+      },
+      "posX": 732.0,
+      "posY": -475.0,
+      "scale": 1.0,
+      "start": 0.0,
+      "duration": 1660.8604115384614
+    }
+  ]
+}

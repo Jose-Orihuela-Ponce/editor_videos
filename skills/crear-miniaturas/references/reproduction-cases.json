@@ -1,0 +1,49 @@
+{
+  "version": 1,
+  "cases": [
+    {
+      "id": "approved-01",
+      "approval": "user_approved",
+      "name": "Luis González-Posada",
+      "videoUrl": "https://www.youtube.com/watch?v=UmrKIdJk9X0",
+      "frames": {
+        "interviewee": { "role": "E", "seconds": 783, "originalCandidateId": "E1", "description": "Entrevistado de traje azul, cabello oscuro; conservar expresión y mano." },
+        "presenter": { "role": "P", "seconds": 780, "originalCandidateId": "P2", "description": "Presentadora con chaqueta roja, mirada hacia el centro." }
+      },
+      "textLines": ["SERÁ INVESTIGADO POR", "FISCALÍA Y CONTRALORÍA"],
+      "quotationMarks": true,
+      "wordingOrigin": "user_editorial_paraphrase_not_verified_literal_quote",
+      "portrait": {
+        "subject": "Carlos Espá",
+        "pageUrl": "https://andina.pe/agencia/noticia-elecciones-2026-carlos-espa-propone-crear-cinco-penales-maxima-seguridad-1061084.aspx",
+        "imageUrl": "https://portal.andina.pe/EDPfotografia3/Thumbnail/2026/01/26/001246900M.webp",
+        "credit": "ANDINA/Difusión"
+      },
+      "expectedImage": "../assets/approved-01.png",
+      "historicalPrompt": "prompts/approved-01.txt",
+      "notes": ["El texto es una reformulación editorial del usuario.", "La URL de imagen puede cambiar; verificar la página y registrar la foto que se use."]
+    },
+    {
+      "id": "approved-02",
+      "approval": "user_approved",
+      "name": "Carlos Bruce",
+      "videoUrl": "https://www.youtube.com/watch?v=IIUUks5XOWg",
+      "frames": {
+        "interviewee": { "role": "E", "seconds": 1455, "originalCandidateId": "E1", "description": "Entrevistado calvo con gafas sin montura, camisa celeste y chaqueta oscura." },
+        "presenter": { "role": "P", "seconds": 1374, "originalCandidateId": "P1", "description": "Presentadora con chaqueta gris oscura y blusa granate; conservar su vestuario real." }
+      },
+      "textLines": ["CUANDO PIERDA, NO VA", "A ACEPTAR SER MI REGIDOR"],
+      "quotationMarks": true,
+      "wordingOrigin": "user_editorial_paraphrase_not_verified_literal_quote",
+      "portrait": {
+        "subject": "Rafael López Aliaga",
+        "pageUrl": "https://elcomercio.pe/politica/actualidad/rafael-lopez-aliaga-alcalde-de-lima-por-culpa-de-la-corrupcion-no-importaba-que-la-gente-demorara-la-vida-en-transportarse-entrevista-noticia/",
+        "imageUrl": "https://cloudfront-us-east-1.images.arcpublishing.com/elcomercio/KTJIIL5FQFDMRF25TN5Y3VNOVA.jpg",
+        "credit": "GEC/Hugo Pérez — El Comercio"
+      },
+      "expectedImage": "../assets/approved-02.png",
+      "historicalPrompt": "prompts/approved-02.txt",
+      "notes": ["Una muestra original usó una chaqueta blanca ajena a la captura seleccionada; el resultado aprobado conserva la chaqueta oscura.", "Se corrigió solo el círculo cuando la generación inventó una corbata; conservar cuello abierto y camisa a rayas de la foto nueva."]
+    }
+  ]
+}

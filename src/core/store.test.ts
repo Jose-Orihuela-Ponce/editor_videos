@@ -1,6 +1,9 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { createEmptyProject } from './project';
 import { hasUnsavedChanges, useProjectStore } from './store';
+import { makeClip } from './timeline';
+import { addVisualLayer } from './layers';
+import type { Media } from './project';
 
 beforeEach(() => useProjectStore.getState().clear());
 describe('Historial y guardado', () => {
@@ -47,5 +50,25 @@ describe('Historial y guardado', () => {
     expect(store().future).toHaveLength(0);
     expect(store().project?.toolData).toEqual(source.toolData);
     expect(store().project?.canvas).toEqual({ w: 1080, h: 1920, fps: 30 });
+  });
+  it('mantiene posiciones válidas al cambiar de orientación y restaura las originales al deshacer', () => {
+    const source = createEmptyProject('Encuadre', 'horizontal');
+    const media: Media = { id: 'clip', path: 'clip.mp4', kind: 'video', duration: 1, w: 1920, h: 1080, hasAudio: false };
+    source.media = [media];
+    source.main = [{ ...makeClip(media, 0), zoom: 5, posX: 2300, posY: 100 }];
+    addVisualLayer(source, 0);
+    source.overlays[0].posX = -2500;
+    const store = useProjectStore.getState;
+    store().load(source, 'C:/proyecto.json');
+    store().setOrientation('vertical');
+    expect(store().project?.main[0]).toMatchObject({ posX: 2160, posY: 100, zoom: 5 });
+    expect(store().project?.overlays[0].posX).toBe(-2160);
+    expect(store().past).toHaveLength(1);
+    store().undo();
+    expect(store().project).toEqual(source);
+    expect(hasUnsavedChanges()).toBe(false);
+    store().redo();
+    expect(store().project?.main[0].posX).toBe(2160);
+    expect(store().project?.orientation).toBe('vertical');
   });
 });

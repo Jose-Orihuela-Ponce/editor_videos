@@ -63,6 +63,24 @@ describe.skipIf(!available)('Exportación real con FFmpeg: dos fuentes, hueco y 
     run(['-i', source.media[0].path, '-/filter_complex', graph, '-map', '[vout]', '-map', '[aout]', '-c:v', 'libx264', '-preset', 'ultrafast', '-c:a', 'aac', '-t', String(plan.duration), output]);
     expect(Math.abs(Number(probe(output).format.duration) - 2)).toBeLessThan(0.05); expect(rms(output, 1.5)).toBeGreaterThan(0.015);
   }, 45000);
+  it.each([24, 24000 / 1001])('conserva cada corte en su fotograma de salida a %s fps', fps => {
+    const source = createEmptyProject('Cortes breves', 'horizontal');
+    source.media = [{ ...project.media[0], fps }, project.media[1]];
+    source.main = Array.from({ length: 20 }, (_, index) => ({
+      ...makeClip(source.media[index % 2], index * 0.11), srcEnd: 0.11,
+    }));
+    const plan = buildRenderPlan(source, { format: 'mp4', quality: 'original' });
+    const graph = join(folder, 'cuts.txt'), output = join(folder, 'cuts.mp4');
+    writeFileSync(graph, plan.graph);
+    run([...source.media.flatMap(media => ['-i', media.path]), '-/filter_complex', graph, '-map', '[vout]', '-map', '[aout]', '-c:v', 'libx264', '-preset', 'ultrafast', '-c:a', 'aac', '-t', String(plan.duration), output]);
+    const frames = run(['-i', output, '-vf', 'crop=2:2', '-pix_fmt', 'rgb24', '-f', 'rawvideo', '-']);
+    const colors = Array.from({ length: frames.length / 12 }, (_, index) => frames[index * 12] > frames[index * 12 + 2] ? 'red' : 'blue');
+    const expected = Array.from({ length: Math.ceil(plan.duration * fps) }, (_, index) => Math.floor(index / fps / 0.11 + 1e-8) % 2 === 0 ? 'red' : 'blue');
+    expect(colors).toEqual(expected);
+    const info = probe(output);
+    expect(info.streams.find((s: { codec_type: string }) => s.codec_type === 'video').avg_frame_rate).toBe(fps === 24 ? '24/1' : '24000/1001');
+    expect(Number(info.streams.find((s: { codec_type: string }) => s.codec_type === 'audio').duration)).toBeCloseTo(2.2, 2);
+  }, 45000);
   it.each(['horizontal', 'vertical'] as const)('crop, espejos, escala y posición coinciden con la geometría de vista previa en %s', orientation => {
     const source = createEmptyProject('Transformaciones', orientation);
     const media: Media = { ...project.media[0], path: join(folder, 'quadrants.mp4'), hasAudio: false };

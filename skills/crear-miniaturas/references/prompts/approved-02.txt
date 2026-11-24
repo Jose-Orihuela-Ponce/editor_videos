@@ -1,0 +1,25 @@
+Built-in imagegen, generation prompt:
+
+Use case: compositing.
+Create a wide 16:9 YouTube thumbnail, 1920x1080 composition, second example in the user's approved Peruvian political interview thumbnail style.
+Inputs in order:
+Image 1 E1.jpg: exact user-selected interviewee frame from second video, Carlos Bruce. Use THIS bald man with rimless glasses, light blue open-collar shirt, dark blazer, original facial expression and eyes looking slightly right. Enlarge and crop on LEFT, retaining photographic identity.
+Image 2 P1.jpg: exact user-selected interviewer frame from second video. Use THIS woman, dark charcoal blazer and burgundy top, original slightly inclined head, focused serious face and eyes looking left. Enlarge and crop on RIGHT. MUST keep her dark charcoal blazer, NOT white or red. Do not invent a reaction.
+Image 3 rafael-lopez-aliaga-elcomercio.jpg: reference photograph to insert into TOP CENTER CIRCLE. Use the face of the man standing in the center of that photo, Rafael López Aliaga. Crop closely around his real head and upper shoulders, preserving exact face and expression. Do not show the entire wide room or tiny full body. Keep the light neutral photographic background inside circle.
+Image 4 miniatura-v1.png: APPROVED STYLE REFERENCE from first test. Match its typography, soft dark outer vignette, black gradient at bottom, blue TV studio collage background, large photographic faces, top center circular reference, black rim and large curved RED arrow with BLACK outline. This input is STYLE ONLY; do not copy its people or title.
+Image 5 original second example: comparison reference for composition and exact title. Its presenter wearing white is NOT the selected source; must use the woman in dark blazer from Image 2. Use E1 expression and frame from Image 1 rather than copying this sample interviewee.
+Layout: interviewee occupies left half, interviewer right half, large heads turned naturally inward as in original selected frames. Clear open eyes, realistic facial detail, photographic skin, no stylized painting. Keep all three faces fully visible. Main faces similarly large to approved style reference, with minimal headroom. Retain studio blue background from the captures. Top center circular portrait about 22% canvas width, thin dark outline, not covering either main face. Curved thick red arrow with black rim rises from interviewee's chest area to the reference circle. Remove all original channel logos, timestamps, news lower-thirds and any broadcast lettering.
+Bottom: soft BLACK gradient and dark vignette at outer edges, no literal smoke. Two huge lines of WHITE uppercase chunky condensed display type like Luckiest Guy with very thick BLACK stroke and shadow, matching approved reference. Use exact text including opening and closing curly quotation marks, quoted across the two lines:
+“CUANDO PIERDA, NO VA
+A ACEPTAR SER MI REGIDOR”
+First line exactly CUANDO PIERDA, NO VA, second exactly A ACEPTAR SER MI REGIDOR. One opening quote at beginning and one closing quote at end. Keep comma after PIERDA. Ensure all words present with correct Spanish spelling, huge legible letters that fit comfortably within small safe margins; no clipping. White text only, not yellow. Text occupies lower approximately 30-35%, no additional text.
+Preserve selected source identities, facial expressions, gaze, head angle and clothing. No beautification, altered expression, swapped face, invented gesture, extra people, symbols, footer or watermark. The title is the user's editorial paraphrase and not a transcript to infer. Output only the finished clean thumbnail.
+
+Targeted circle correction prompt:
+
+Use case: precise-object-edit / compositing.
+Edit Image 1, the finished wide YouTube thumbnail. Change ONLY the photo INSIDE the top-center circular inset. Replace that circular portrait with a close crop of the actual man in the center of Image 2 (the downloaded photograph of Rafael López Aliaga standing in an ornate white hall, dark navy blazer over a blue striped OPEN-COLLAR shirt, NO TIE). Preserve this exact person's photographic face, expression and existing attire from Image 2. Head and upper shoulders should fill the circle, do not insert full-body tiny figure. Keep the neutral light hall as background visible behind him inside circle. Do NOT invent a red tie, do NOT use the previous red tie portrait. Use the exact new source photo as a composited crop; no invented reaction.
+Preserve everything outside the circle in Image 1 unchanged: both main participants' faces, glasses, expressions, head angles, dark charcoal presenter jacket, blue studio background, black vignette and lower gradient, circle placement/size/border, red curved arrow and ALL existing lettering exactly. Exact existing title remains:
+“CUANDO PIERDA, NO VA
+A ACEPTAR SER MI REGIDOR”
+No other edits. Wide16:9, same composition and dimensions as Image 1.

@@ -15,12 +15,20 @@ jobs:
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
       - uses: actions/setup-node@v6
         with:
           node-version: 24
           cache: npm
+      - name: Revisar secretos en archivos e historial
+        run: npm run check:secrets -- --history
       - name: Instalar dependencias de interfaz
         run: npm ci
+      - name: Habilitar y comprobar skills del repositorio
+        run: |
+          npm run skills:setup
+          npm run skills:check
       - name: Preparar FFmpeg y FFprobe
         shell: pwsh
         run: |

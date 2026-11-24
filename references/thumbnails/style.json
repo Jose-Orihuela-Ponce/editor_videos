@@ -1,0 +1,97 @@
+{
+  "version": 1,
+  "status": "approved_two_examples",
+  "purpose": "Visual reference for assisted thumbnail composition; not yet integrated into the production runner.",
+  "canvas": {
+    "aspectRatio": "16:9",
+    "preferredWidth": 1920,
+    "preferredHeight": 1080
+  },
+  "layout": {
+    "interviewee": "left",
+    "presenter": "right",
+    "framing": "large face and upper torso crops; preserve useful hand gestures",
+    "background": "retain blue studio backgrounds",
+    "referenceInset": {
+      "shape": "circle",
+      "position": "top_center",
+      "border": "thin_dark"
+    },
+    "arrow": {
+      "shape": "curved",
+      "fill": "red",
+      "outline": "black",
+      "direction": "from_interviewee_toward_reference_inset"
+    }
+  },
+  "typography": {
+    "suggestedFont": "Luckiest Guy",
+    "fontMatch": "approximate",
+    "case": "uppercase",
+    "fill": "white",
+    "outline": "thick_black",
+    "placement": "bottom",
+    "preferredLines": 2,
+    "copy": "provided_by_user",
+    "quotationMarks": "only_if_requested"
+  },
+  "effects": {
+    "bottom": "soft_black_gradient",
+    "edges": "dark_vignette",
+    "literalSmoke": false
+  },
+  "candidateSelection": {
+    "perRole": {
+      "min": 3,
+      "max": 4
+    },
+    "priority": [
+      "large_clear_face",
+      "head_and_gaze_toward_other_participant",
+      "open_eyes",
+      "natural_expression",
+      "gesture_variety"
+    ],
+    "exclude": [
+      "transition_blends",
+      "blur",
+      "closed_eyes",
+      "small_inset_only"
+    ],
+    "keepOriginalFrame": true,
+    "keepTimestamp": true,
+    "allowFurtherRounds": true,
+    "selectionOwner": "user"
+  },
+  "identity": {
+    "preserve": [
+      "face",
+      "expression",
+      "head_angle",
+      "gaze",
+      "clothing"
+    ],
+    "remove": [
+      "broadcast_logo",
+      "broadcast_timestamp",
+      "lower_third_text"
+    ],
+    "doNotInventExpressions": true,
+    "sourcePriority": "selected_frames_and_new_reference_photo_override_sample_people_clothing_and_insets"
+  },
+  "workflow": {
+    "requireUserFrameSelection": true,
+    "requireUserContext": true,
+    "requireReferenceSubject": true,
+    "referenceImage": "search_online_and_record_source",
+    "requireUserThumbnailText": true,
+    "correctTextWith": "corregir-textos",
+    "keepPublicationTitleSeparate": true,
+    "keepParaphraseContext": true,
+    "finalReviewOwner": "user"
+  },
+  "approvedExamples": [
+    "../../skills/crear-miniaturas/assets/approved-01.png",
+    "../../skills/crear-miniaturas/assets/approved-02.png"
+  ]
+}

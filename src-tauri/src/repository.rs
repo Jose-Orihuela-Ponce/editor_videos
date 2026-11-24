@@ -443,8 +443,8 @@ mod tests {
             {"id":"audio","kind":"audio","path":"C:/audio.wav","duration":12,"hasAudio":true}
         ])).unwrap();
         project.overlays = serde_json::from_value(serde_json::json!([
-            {"id":"title","type":"text","start":1,"duration":3,"posX":100,"posY":-50,"scale":1.2,"track":2,"text":"Hola","style":{"font":"Montserrat","size":72,"color":"#ffffff","bgColor":"#112233","bgOpacity":0.6,"bgEnabled":false,"bold":true,"italic":true,"underline":true,"opacity":0.55,"align":"center"}},
-            {"id":"photo","type":"image","mediaId":"image","start":1,"duration":5,"posX":-80,"posY":30,"scale":0.5,"track":1},
+            {"id":"title","type":"text","start":1,"duration":3,"posX":100,"posY":-50,"scale":1.2,"track":2,"text":"Hola","style":{"font":"Montserrat","size":72,"color":"#ffffff","bgColor":"#112233","bgOpacity":0.6,"bgEnabled":false,"bold":true,"italic":true,"underline":true,"opacity":0.55,"letterSpacing":-10,"lineHeight":0.8,"align":"center"}},
+            {"id":"photo","type":"image","mediaId":"image","start":1,"duration":5,"posX":-80,"posY":30,"scale":0.5,"track":1,"crop":{"x":0.5,"y":0,"w":0.5,"h":1}},
             {"id":"overlay","type":"video","mediaId":"video","start":1,"duration":2,"srcStart":1,"srcEnd":5,"speed":2,"volume":1.5,"posX":40,"posY":10,"scale":0.6,"track":3}
         ])).unwrap();
         project.audio = serde_json::from_value(serde_json::json!([

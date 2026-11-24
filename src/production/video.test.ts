@@ -1,14 +1,14 @@
 import { expect, it } from 'vitest';
-import { automaticName, automaticProject } from './automatic';
-import { createEmptyProject } from './project';
-import type { Media } from './project';
-import { applyStyle, captureStyle, clipSettings, defaultClipSettings } from './presets';
-import { addVisualLayer, updateOverlay } from './layers';
-import { updateClipSettings } from './clipSettings';
-import type { Preset } from './presets';
-import { makeClip, projectDuration } from './timeline';
-import { buildRenderPlan } from './export';
-import { useProjectStore } from './store';
+import { automaticName, automaticProject } from './video';
+import { createEmptyProject } from '../core/project';
+import type { Media } from '../core/project';
+import { applyStyle, captureStyle, clipSettings, defaultClipSettings } from '../core/styles';
+import { addVisualLayer, updateOverlay } from '../core/layers';
+import { updateClipSettings } from '../core/clipSettings';
+import type { Preset } from '../core/styles';
+import { makeClip, projectDuration } from '../core/timeline';
+import { buildRenderPlan } from '../core/export';
+import { useProjectStore } from '../core/store';
 
 const media: Media = { id: 'source', path: 'original.mkv', kind: 'video', duration: 8, w: 1280, h: 720, fps: 29.97, hasAudio: true };
 const preset: Preset = { clip: { ...defaultClipSettings(), speed: 2, volume: 0.7, flipH: true, zoom: 1.3, posX: 80 }, text: null, texts: [

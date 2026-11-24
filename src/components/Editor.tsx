@@ -14,6 +14,7 @@ import { addAudioLayer, addVisualLayer, defaultTextStyle, moveLayer, removeLayer
 import { ClipTools, ClipToolButtons } from '../tools';
 import LayerControls from '../tools/layers/LayerControls';
 import { applyStyle, applyStyleToText, captureStyle, clipSettings, defaultClipSettings, usePresets } from '../core/presets';
+import Modal from './Modal';
 import PreviewFrame from './PreviewFrame';
 import LayerPreview from './LayerPreview';
 import ExportDialog from './ExportDialog';
@@ -29,6 +30,10 @@ export default function Editor({ project, saving, onBack, onSave, onNotice, engi
   const video = useRef<HTMLVideoElement>(null), playback = useRef<PlaybackController | null>(null), nameGroup = useRef('');
   const [missing, setMissing] = useState<string[]>([]);
   const [importing, setImporting] = useState(false), [exportOpen, setExportOpen] = useState(false);
+  const [styleDialog, setStyleDialog] = useState<'save' | 'apply' | null>(null);
+  const [styleId, setStyleId] = useState('');
+  const [styleName, setStyleName] = useState('');
+  const [styleError, setStyleError] = useState('');
   const [start, setStart] = useState('0');
   const [layerController, setLayerController] = useState<PlaybackController | null>(null);
   const [cropClipId, setCropClipId] = useState<string | null>(null);
@@ -40,6 +45,13 @@ export default function Editor({ project, saving, onBack, onSave, onNotice, engi
   const cropEditing = !previewFullscreen && !!selected && cropClipId === selected.id;
   const fullscreenLabel = previewFullscreen ? 'Salir de pantalla completa' : 'Pantalla completa';
   const selectedLayer = project.overlays.find(item => item.id === selectedId) ?? project.audio.find(item => item.id === selectedId);
+  const selectedText = selectedLayer && 'type' in selectedLayer && selectedLayer.type === 'text' ? selectedLayer : undefined;
+  const styles = presets[project.orientation];
+  const applicableStyles = styles.filter(({ preset }) => selected ? !!preset.clip : !!selectedText && (!!preset.text || !!preset.texts?.length));
+  const styleSource = selected ?? (selectedText ? clipAt(project, time) ?? clipAt(project, selectedText.start) : undefined);
+  const selectedStyle = applicableStyles.find(style => style.id === styleId);
+  const selectedImage = selectedLayer && 'type' in selectedLayer && selectedLayer.type === 'image' ? selectedLayer : undefined;
+  const imageCropId = !previewFullscreen && !exporting && selectedImage?.id === cropClipId ? selectedImage?.id : undefined;
   const visualRows = new Set([0, ...project.overlays.map(item => item.track ?? 0)]).size;
   const audioRows = new Set([0, ...project.audio.map(item => item.track ?? 0)]).size;
   const workspaceStyle = { '--timeline-height': `${Math.min(440, Math.max(242, 70 + (visualRows + audioRows + 1) * 49))}px` } as CSSProperties;
@@ -90,21 +102,32 @@ export default function Editor({ project, saving, onBack, onSave, onNotice, engi
     try { useProjectStore.getState().edit(p => { if (copied.kind === 'clip') updateClipSettings(p, id, copied.value); else updateOverlay(p, id, { style: copied.value }); }); onNotice('Ajustes pegados.'); }
     catch (error) { onNotice(error instanceof Error ? error.message : String(error), true); }
   };
+  function openStyleDialog(mode: 'save' | 'apply') {
+    playback.current?.pause();
+    setStyleId(mode === 'apply' ? applicableStyles[0]?.id ?? '' : '');
+    setStyleName('');
+    setStyleError('');
+    setStyleDialog(mode);
+  }
   async function savePreset() {
-    const current = selected ?? (selectedLayer && 'type' in selectedLayer && selectedLayer.type === 'text' ? clipAt(project, useSession.getState().time) ?? clipAt(project, selectedLayer.start) : undefined);
-    if (!current) { onNotice('Selecciona el video cuyo estilo quieres guardar.', true); return; }
-    try { await usePresets.getState().saveStyle(project.orientation, captureStyle(project, current)); onNotice('Estilo guardado.'); }
-    catch (error) { onNotice(error instanceof Error ? error.message : String(error), true); }
+    if (!styleSource || presetBusy) return;
+    try {
+      await usePresets.getState().saveStyle(project.orientation, captureStyle(project, styleSource),
+        styleId ? { replaceId: styleId } : { name: styleName.trim() });
+      setStyleDialog(null);
+      onNotice(styleId ? 'Estilo reemplazado.' : 'Estilo guardado.');
+    } catch (error) { setStyleError(error instanceof Error ? error.message : String(error)); }
   }
   function applyPreset() {
-    const preset = presets[project.orientation];
+    if (!selectedStyle) return;
+    const { preset } = selectedStyle;
     try {
       if (selected && preset.clip) useProjectStore.getState().edit(p => applyStyle(p, selected.id, preset));
-      else if (selectedLayer && 'type' in selectedLayer && selectedLayer.type === 'text' && preset.texts?.length) useProjectStore.getState().edit(p => applyStyleToText(p, selectedLayer.id, preset.texts![0]));
-      else if (selectedLayer && 'type' in selectedLayer && selectedLayer.type === 'text' && preset.text) useProjectStore.getState().edit(p => updateOverlay(p, selectedLayer.id, { style: preset.text! }));
-      else { onNotice('Selecciona un video o texto y guarda primero un estilo para este formato.', true); return; }
+      else if (selectedText && preset.texts?.length) useProjectStore.getState().edit(p => applyStyleToText(p, selectedText.id, preset.texts![0]));
+      else if (selectedText && preset.text) useProjectStore.getState().edit(p => updateOverlay(p, selectedText.id, { style: preset.text! }));
+      setStyleDialog(null);
       onNotice('Estilo aplicado.');
-    } catch (error) { onNotice(error instanceof Error ? error.message : String(error), true); }
+    } catch (error) { setStyleError(error instanceof Error ? error.message : String(error)); }
   }
   function resetSettings() {
     try { if (selected) useProjectStore.getState().edit(p => updateClipSettings(p, selected.id, defaultClipSettings()));
@@ -229,7 +252,7 @@ export default function Editor({ project, saving, onBack, onSave, onNotice, engi
     reorder(selected.id, direction < 0 ? project.main[target].id : project.main[target + 1]?.id ?? null);
   }
   return <div className={`editor-layout ${project.orientation}`} style={workspaceStyle}>
-    <header className="editor-topbar"><button className="back-button" disabled={exporting} onClick={onBack} aria-label="Volver al inicio"><ArrowLeft size={18} /><span className="brand-icon"><Clapperboard size={17} /></span></button><span className="topbar-divider" /><div className="project-title"><strong>{project.name || 'Sin nombre'}</strong><span className={dirty ? 'unsaved' : ''}>{dirty ? 'Sin guardar' : <><Check size={12} />Guardado</>}</span></div><div className="topbar-actions"><button className="secondary-button" disabled={presetBusy || !desktop || !selectedId} onClick={() => void savePreset()}>Guardar estilo</button><button className="secondary-button" disabled={!selectedId || (!presets[project.orientation].clip && !presets[project.orientation].text)} onClick={applyPreset}>Aplicar estilo</button><button className="icon-button" aria-label="Deshacer" title="Deshacer · Ctrl+Z" disabled={!past.length} onClick={() => useProjectStore.getState().undo()}><Undo2 size={18} /></button><button className="icon-button" aria-label="Rehacer" title="Rehacer · Ctrl+Shift+Z" disabled={!future.length} onClick={() => useProjectStore.getState().redo()}><Redo2 size={18} /></button><span className="topbar-divider" /><button aria-label="Guardar proyecto" title="Guardar proyecto" className="secondary-button" onClick={onSave} disabled={saving || !desktop}><Save size={16} />{saving ? 'Guardando…' : 'Guardar'}</button><button aria-label="Exportar" title="Exportar" className="primary-button" disabled={!duration || !desktop || importing} onClick={() => { playback.current?.pause(); setExportOpen(true); }}><ArrowDownToLine size={16} />Exportar</button></div></header>
+    <header className="editor-topbar"><button className="back-button" disabled={exporting} onClick={onBack} aria-label="Volver al inicio"><ArrowLeft size={18} /><span className="brand-icon"><Clapperboard size={17} /></span></button><span className="topbar-divider" /><div className="project-title"><strong>{project.name || 'Sin nombre'}</strong><span className={dirty ? 'unsaved' : ''}>{dirty ? 'Sin guardar' : <><Check size={12} />Guardado</>}</span></div><div className="topbar-actions"><button className="secondary-button" disabled={presetBusy || !desktop || !styleSource} onClick={() => openStyleDialog('save')}>Guardar estilo</button><button className="secondary-button" disabled={presetBusy || !applicableStyles.length} onClick={() => openStyleDialog('apply')}>Aplicar estilo</button><button className="icon-button" aria-label="Deshacer" title="Deshacer · Ctrl+Z" disabled={!past.length} onClick={() => useProjectStore.getState().undo()}><Undo2 size={18} /></button><button className="icon-button" aria-label="Rehacer" title="Rehacer · Ctrl+Shift+Z" disabled={!future.length} onClick={() => useProjectStore.getState().redo()}><Redo2 size={18} /></button><span className="topbar-divider" /><button aria-label="Guardar proyecto" title="Guardar proyecto" className="secondary-button" onClick={onSave} disabled={saving || !desktop}><Save size={16} />{saving ? 'Guardando…' : 'Guardar'}</button><button aria-label="Exportar" title="Exportar" className="primary-button" disabled={!duration || !desktop || importing} onClick={() => { playback.current?.pause(); setExportOpen(true); }}><ArrowDownToLine size={16} />Exportar</button></div></header>
     <div className={`editor-workspace ${project.orientation}`}>
       <aside className="media-panel"><div className="panel-heading">Medios<span>{project.media.length}</span><button className="icon-button" aria-label="Agregar archivos" title="Agregar archivos" disabled={importing || !desktop} onClick={() => void importVideos()}><Plus size={16} /></button></div>{missing.length > 0 && <div className="missing-media" role="status"><strong>Archivos no encontrados</strong>{missing.map(id => { const media = project.media.find(m => m.id === id); return media ? <div key={id}><span title={media.path}>{fileName(media.path)}</span><button className="secondary-button" onClick={() => void locateMedia(id)}>Localizar</button></div> : null; })}</div>}{project.media.length ? <div className="media-grid">{project.media.map(media => <div className="media-card" key={media.id}><button className="media-card-main" title={media.kind === 'video' ? 'Añadir a la pista principal' : 'Añadir a la línea de tiempo'} aria-label={`Añadir ${fileName(media.path)}${media.kind === 'video' ? ' al final' : ''}`} onClick={() => appendAgain(media.id)}>{media.thumbnail ? <img src={mediaUrl(media.thumbnail)} alt="" /> : media.kind === 'audio' ? <Music2 size={25} /> : media.kind === 'image' ? <ImageIcon size={25} /> : <Film size={25} />}<strong>{fileName(media.path)}</strong><small>{media.kind === 'image' ? `Imagen · ${media.w} × ${media.h}` : `${formatTime(media.duration)}${media.kind === 'video' ? ` · ${media.w} × ${media.h}` : ' · Audio'}`}</small></button>{media.kind === 'video' && <button className="media-card-add" aria-label={`Añadir ${fileName(media.path)} como capa`} title="Añadir como video superpuesto" onClick={() => addAsLayer(media.id)}><Layers2 size={14} /></button>}</div>)}</div> : <div className="media-empty"><Film size={31} strokeWidth={1.2} /><strong>Tu biblioteca de medios</strong><p>Añade videos, imágenes o audio para empezar a editar.</p><button className="secondary-button" disabled={importing || !desktop} onClick={() => void importVideos()}><Plus size={16} />{importing ? 'Analizando…' : 'Agregar archivos'}</button></div>}{proxyWorking.some(path => project.media.some(m => m.path === path)) && <p className="importing-status"><span className="loading-ring" />Preparando vista previa…</p>}{importing && <p className="importing-status"><span className="loading-ring" />Analizando archivos y miniaturas…</p>}</aside>
       <section className="preview-panel" ref={previewPanel}>
@@ -237,13 +260,14 @@ export default function Editor({ project, saving, onBack, onSave, onNotice, engi
         <div className="canvas-area">
           <div className={`video-canvas ${project.orientation}`}>
             <PreviewFrame
-              editingDisabled={previewFullscreen || loading || !!error || exporting}
+              editingDisabled={previewFullscreen || !!imageCropId || loading || !!error || exporting}
               onInteract={id => { playback.current?.pause(); selectClip(id); setCropClipId(null); }}
               project={project} time={time} videoRef={video} selected={selected}
               cropEditing={cropEditing} onNotice={onNotice}
             />
+            {imageCropId && <span className="image-crop-backdrop" aria-hidden="true" />}
             <LayerPreview
-              project={project} controller={layerController} suppressed={cropEditing} onNotice={onNotice}
+              project={project} controller={layerController} suppressed={cropEditing} imageCropId={imageCropId} onNotice={onNotice}
               onSelect={id => { playback.current?.pause(); selectClip(id); setCropClipId(null); }}
             />
             {fitGuide && <span className="text-fit-guide" aria-hidden="true" style={{ left: `${fitGuide.left / project.canvas.w * 100}%`, top: `${fitGuide.top / project.canvas.h * 100}%`, width: `${fitGuide.width / project.canvas.w * 100}%`, height: `${fitGuide.height / project.canvas.h * 100}%` }} />}
@@ -274,13 +298,38 @@ export default function Editor({ project, saving, onBack, onSave, onNotice, engi
           e.preventDefault(); try { useProjectStore.getState().edit(p => trimClip(p, selected.id, selected.srcStart, selected.srcEnd, Number(start))); const next = useProjectStore.getState().project?.main.find(c => c.id === selected.id); if (next) seek(next.start); } catch (error) { onNotice(error instanceof Error ? error.message : String(error), true); }
         }}><label className="field-label">Inicio en la línea de tiempo (s)<input className="text-input" type="number" min={0} step="any" value={start} onChange={e => setStart(e.target.value)} /></label><button className="secondary-button clip-move-apply" type="submit">Mover clip</button></form>}
         <div className="clip-reorder"><button type="button" className="icon-button" aria-label="Mover clip antes" disabled={!project.autoJoin || project.main[0]?.id === selected.id} onClick={() => moveSelected(-1)}><ArrowLeft size={16} /></button><span>{formatTime(clipDuration(selected), true)}</span><button type="button" className="icon-button" aria-label="Mover clip después" disabled={!project.autoJoin || project.main.at(-1)?.id === selected.id} onClick={() => moveSelected(1)}><ArrowRight size={16} /></button></div>{presetActions}</div>}
-        {selectedLayer && <LayerControls key={selectedLayer.id} project={project} item={selectedLayer} onNotice={onNotice} />}
+        {selectedLayer && <LayerControls key={selectedLayer.id} project={project} item={selectedLayer} onNotice={onNotice}
+          cropEditing={!!imageCropId} onCropToggle={() => {
+            if (!selectedImage || previewFullscreen || exporting) return;
+            if (imageCropId) setCropClipId(null);
+            else { playback.current?.pause(); setCropClipId(selectedImage.id); }
+          }} />}
         {selectedLayer && 'type' in selectedLayer && selectedLayer.type === 'text' && presetActions}
         <details className="project-settings" open={!selected && !selectedLayer ? true : undefined}><summary>Configuración del proyecto</summary><label className="field-label" htmlFor="project-name">Nombre del proyecto</label><input id="project-name" className="text-input" value={project.name} maxLength={120} onFocus={() => { nameGroup.current = crypto.randomUUID(); }} onChange={e => useProjectStore.getState().edit(p => { p.name = e.target.value; }, nameGroup.current)} /><label className="field-label">Formato</label><div className="orientation-toggle"><button className={project.orientation === 'horizontal' ? 'selected' : ''} onClick={() => useProjectStore.getState().setOrientation('horizontal')}><Monitor size={17} />Horizontal</button><button className={project.orientation === 'vertical' ? 'selected' : ''} onClick={() => useProjectStore.getState().setOrientation('vertical')}><Smartphone size={17} />Vertical</button></div><dl className="project-details"><div><dt>Lienzo</dt><dd>{project.canvas.w} × {project.canvas.h}</dd></div><div><dt>Cabezal</dt><dd>{project.canvas.fps} fps</dd></div><div><dt>Duración</dt><dd>{formatTime(duration, true)}</dd></div></dl><div className="property-separator" /><label className="check-option"><input type="checkbox" checked={project.autoJoin} onChange={e => useProjectStore.getState().setAutoJoin(e.target.checked)} /><span>Unión automática</span></label></details>
       </aside>
     </div>
     <Timeline onResizeLayer={(id, duration, group) => { try { useProjectStore.getState().edit(p => { const item = p.overlays.find(o => o.id === id); if (!item) return; const next = p.overlays.filter(o => o.id !== id && (o.track ?? 0) === (item.track ?? 0) && o.start >= item.start + item.duration - 1e-6).reduce((end, o) => Math.min(end, o.start), Infinity); updateOverlay(p, id, { duration: Math.min(duration, next - item.start) }); }, group); } catch (error) { onNotice(error instanceof Error ? error.message : String(error), true); } }} onMainToLayer={(id, start, track) => { try { useProjectStore.getState().edit(p => { const c = p.main.find(x => x.id === id); if (!c) return; if (c.flipH || c.flipV || c.zoom !== 1 || c.stretchX !== 1 || c.stretchY !== 1 || c.crop.x !== 0 || c.crop.y !== 0 || c.crop.w !== 1 || c.crop.h !== 1) throw new Error('Este clip tiene transformaciones; utiliza el botón de capa de su archivo para crear una superposición.'); const media = p.media.find(m => m.id === c.mediaId)!; const layer = addVisualLayer(p, start, media); updateOverlay(p, layer, { srcStart: c.srcStart, srcEnd: c.srcEnd, speed: c.speed, volume: c.volume, posX: c.posX, posY: c.posY, scale: 1 }); moveLayer(p, layer, start, track); deleteClip(p, id); selectClip(layer); }); } catch (error) { onNotice(error instanceof Error ? error.message : String(error), true); } }} onAddText={addText} onMoveLayer={(id, start, track) => { try { useProjectStore.getState().edit(p => moveLayer(p, id, start, track)); } catch (error) { onNotice(error instanceof Error ? error.message : String(error), true); } }} tools={selected && <ClipToolButtons project={project} clip={selected} onNotice={onNotice} cropEditing={cropClipId === selected.id} onCropToggle={() => { if (cropClipId === selected.id) setCropClipId(null); else { seek(selected.start); setCropClipId(selected.id); } }} />} project={project} onSeek={seek} onSelect={id => { playback.current?.pause(); selectClip(id); }} onReorder={reorder} onSplit={() => actions.current.split()} onDelete={() => actions.current.remove()} />
     <footer className="editor-footer">{engineStatus}<span title={filePath ?? ''}>{filePath ? <><CheckCircle2 size={12} />Proyecto local</> : 'Sin guardar'}<span className="footer-dot">·</span>Espacio · S dividir · Supr borrar</span></footer>
+    {styleDialog && <Modal title={styleDialog === 'save' ? 'Guardar estilo' : 'Aplicar estilo'} locked={presetBusy} onClose={() => setStyleDialog(null)}>
+      <form onSubmit={event => { event.preventDefault(); if (styleDialog === 'save') void savePreset(); else applyPreset(); }}>
+        <label className="field-label">{styleDialog === 'save' ? 'Guardar en' : 'Estilo'}
+          <select className="text-input" disabled={presetBusy} value={styleId} onChange={event => { setStyleId(event.target.value); setStyleError(''); }}>
+            {styleDialog === 'save' && <option value="">Nuevo estilo</option>}
+            {(styleDialog === 'save' ? styles : applicableStyles).map(style => <option key={style.id} value={style.id}>{style.name}</option>)}
+          </select>
+        </label>
+        {styleDialog === 'save' && !styleId && <label className="field-label">Nombre del estilo
+          <input className="text-input" autoFocus required maxLength={60} disabled={presetBusy} value={styleName} onChange={event => { setStyleName(event.target.value); setStyleError(''); }} />
+        </label>}
+        {styleError && <p className="inline-error" role="alert">{styleError}</p>}
+        <div className="modal-actions">
+          <button className="secondary-button" type="button" disabled={presetBusy} onClick={() => setStyleDialog(null)}>Cancelar</button>
+          <button className="primary-button" type="submit" disabled={presetBusy || (styleDialog === 'save' ? !styleId && !styleName.trim() : !selectedStyle)}>
+            {styleDialog === 'apply' ? 'Aplicar' : styleId ? 'Reemplazar estilo' : 'Guardar'}
+          </button>
+        </div>
+      </form>
+    </Modal>}
     {exportOpen && <ExportDialog project={project} onClose={() => setExportOpen(false)} />}
   </div>;
 }

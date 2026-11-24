@@ -3,6 +3,7 @@ import type { Overlay, Project } from '../../core/project';
 function textLayout(ctx: CanvasRenderingContext2D, overlay: Overlay, canvas: Project['canvas']) {
   const style = overlay.style!, size = style.size * overlay.scale;
   ctx.font = `${style.italic ? 'italic ' : ''}${style.bold ? 'bold ' : ''}${size}px ${JSON.stringify(style.font)}, sans-serif`;
+  ctx.letterSpacing = `${(style.letterSpacing ?? 0) * size / 100}px`;
   ctx.textBaseline = 'middle';
   const maxWidth = canvas.w * 0.9;
   const lines: string[] = [];
@@ -15,9 +16,10 @@ function textLayout(ctx: CanvasRenderingContext2D, overlay: Overlay, canvas: Pro
     }
     lines.push(line);
   }
-  const lineHeight = size * 1.2, textWidth = Math.min(maxWidth, Math.max(1, ...lines.map(line => ctx.measureText(line).width)));
+  const lineHeight = size * (style.lineHeight ?? 1.2), textWidth = Math.min(maxWidth, Math.max(1, ...lines.map(line => ctx.measureText(line).width)));
   const padX = size * 0.2, padY = size * 0.12, centerX = canvas.w / 2 + overlay.posX, centerY = canvas.h / 2 + overlay.posY;
-  const bounds = { left: centerX - textWidth / 2 - padX, top: centerY - lines.length * lineHeight / 2 - padY, width: textWidth + 2 * padX, height: lines.length * lineHeight + 2 * padY };
+  const blockHeight = size * 1.2 + (lines.length - 1) * lineHeight;
+  const bounds = { left: centerX - textWidth / 2 - padX, top: centerY - blockHeight / 2 - padY, width: textWidth + 2 * padX, height: blockHeight + 2 * padY };
   return { lines, size, maxWidth, lineHeight, textWidth, centerX, centerY, bounds };
 }
 
@@ -38,7 +40,7 @@ export function drawText(overlay: Overlay, canvas: Project['canvas'], output = {
   ctx.globalAlpha = 1; ctx.fillStyle = style.color; ctx.textAlign = style.align;
   const x = style.align === 'left' ? centerX - textWidth / 2 : style.align === 'right' ? centerX + textWidth / 2 : centerX;
   lines.forEach((line, index) => {
-    const y = centerY - lines.length * lineHeight / 2 + (index + 0.5) * lineHeight;
+    const y = centerY + (index - (lines.length - 1) / 2) * lineHeight;
     ctx.fillText(line, x, y, maxWidth);
     if (style.underline && line) {
       const width = Math.min(maxWidth, ctx.measureText(line).width);

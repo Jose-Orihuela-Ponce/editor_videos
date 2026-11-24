@@ -1,5 +1,5 @@
 import type { Project } from './project';
-import { clipDuration, projectDuration } from './timeline';
+import { clipDuration, clipEnd, projectDuration } from './timeline';
 import { calculateGeometry } from './geometry';
 import { layerGeometry } from './layerGeometry';
 import { overlayEnd } from './layers';
@@ -42,6 +42,10 @@ export function buildRenderPlan(project: Project, options: Pick<ExportOptions, '
   if (!Number.isFinite(duration) || duration <= 0) throw new Error('Añade contenido a la línea de tiempo para exportar.');
   const firstMedia = project.media.find(m => m.id === project.main[0]?.mediaId);
   const fps = Math.min(60, firstMedia?.fps && firstMedia.fps > 0 ? firstMedia.fps : 30);
+  const frameRate = numberArg(fps);
+  // The first frame of each interval is on the project's output grid.
+  const frameAt = (time: number) => Math.ceil(time * fps - 1e-8);
+  const framesIn = (start: number, end: number) => frameAt(end) - frameAt(start);
   const { width, height } = exportSize(project, options.quality);
   const overlays = project.overlays.filter(o => o.start < duration && overlayEnd(o) > 0)
     .map((overlay, index) => ({ overlay, index })).sort((a, b) => (a.overlay.track ?? 0) - (b.overlay.track ?? 0) || a.index - b.index).map(x => x.overlay);
@@ -57,7 +61,7 @@ export function buildRenderPlan(project: Project, options: Pick<ExportOptions, '
   for (const [index, id] of mediaIds.entries()) {
     const media = project.media.find(m => m.id === id);
     if (!media) throw new Error('No se encontró un original del proyecto.');
-    const visualCount = options.format === 'mp4' ? project.main.filter(c => c.mediaId === id).length + overlays.filter(o => o.mediaId === id && (o.type === 'video' || o.type === 'image')).length : 0;
+    const visualCount = options.format === 'mp4' ? project.main.filter(c => c.mediaId === id && framesIn(c.start, clipEnd(c)) > 0).length + overlays.filter(o => o.mediaId === id && (o.type === 'video' || o.type === 'image')).length : 0;
     const audioCount = media.hasAudio ? project.main.filter(c => c.mediaId === id).length + overlays.filter(o => o.type === 'video' && o.mediaId === id).length + audio.filter(a => a.mediaId === id).length : 0;
     if (visualCount) graph.push(`[${index}:v]${visualCount > 1 ? `split=${visualCount}` : 'null'}${Array.from({ length: visualCount }, (_, k) => `[vs${index}_${k}]`).join('')}`);
     if (audioCount) graph.push(`[${index}:a]${audioCount > 1 ? `asplit=${audioCount}` : 'anull'}${Array.from({ length: audioCount }, (_, k) => `[as${index}_${k}]`).join('')}`);
@@ -67,39 +71,58 @@ export function buildRenderPlan(project: Project, options: Pick<ExportOptions, '
     if (index < 0) throw new Error('No se encontró un original de la capa.');
     map.set(id, n + 1); return `${type === 'video' ? 'vs' : 'as'}${index}_${n}`;
   }
-  const segments: { v: string; a: string }[] = [];
+  const videoSegments: string[] = [], audioSegments: string[] = [];
   let cursor = 0;
-  function addGap(length: number) {
-    const id = segments.length;
-    if (options.format === 'mp4') graph.push(`color=c=black:s=${width}x${height}:r=${numberArg(fps)}:d=${numberArg(length)},setsar=1[v${id}]`);
-    graph.push(`anullsrc=r=48000:cl=stereo,atrim=duration=${numberArg(length)},asetpts=PTS-STARTPTS[a${id}]`);
-    segments.push({ v: `v${id}`, a: `a${id}` });
+  function background(frames: number) {
+    return `color=c=black:s=${width}x${height}:r=${frameRate},trim=end_frame=${frames},setsar=1`;
+  }
+  function addBlack(frames: number) {
+    const label = `v${videoSegments.length}`;
+    graph.push(`${background(frames)}[${label}]`);
+    videoSegments.push(label);
+  }
+  function addSilence(length: number) {
+    const label = `a${audioSegments.length}`;
+    graph.push(`anullsrc=r=48000:cl=stereo,atrim=duration=${numberArg(length)},asetpts=PTS-STARTPTS[${label}]`);
+    audioSegments.push(label);
   }
   for (const clip of project.main) {
     if (!Number.isFinite(clip.speed) || clip.speed < 0.25 || clip.speed > 4) throw new Error('La velocidad del clip no es válida.');
     if (!Number.isFinite(clip.volume) || clip.volume < 0 || clip.volume > 2) throw new Error('El volumen del clip debe estar entre 0% y 200%.');
     if (clip.start < cursor - 1e-6) throw new Error('Hay clips solapados en la pista principal.');
-    if (clip.start > cursor + 1e-6) addGap(clip.start - cursor);
+    if (clip.start > cursor + 1e-6) addSilence(clip.start - cursor);
     const media = project.media.find(m => m.id === clip.mediaId)!;
-    const id = segments.length, length = clipDuration(clip), t = numberArg(length);
+    const end = clipEnd(clip), t = numberArg(clipDuration(clip));
     if (options.format === 'mp4') {
-      const geometry = calculateGeometry(media, project.canvas, clip);
-      const transform = exportTransform(geometry, { w: width, h: height }, project.canvas, clip);
-      const filters = [`trim=start=${numberArg(clip.srcStart)}:end=${numberArg(clip.srcEnd)}`, ...exportSpeedVideo(clip.speed), ...exportCrop(geometry.crop), ...exportFlip(clip), ...transform.filters, `fps=${numberArg(fps)}`, `tpad=stop_mode=clone:stop_duration=${t}`, `trim=duration=${t}`, 'setpts=PTS-STARTPTS'];
-      graph.push(`[${branch(clip.mediaId, 'video')}]${filters.join(',')}[image${id}]`);
-      graph.push(`color=c=black:s=${width}x${height}:r=${numberArg(fps)}:d=${t},setsar=1[bg${id}]`);
-      graph.push(`[bg${id}][image${id}]overlay=x=${numberArg(transform.left)}:y=${numberArg(transform.top)}:shortest=1:format=yuv444,format=yuv420p[v${id}]`);
+      const gapFrames = framesIn(cursor, clip.start);
+      if (gapFrames > 0) addBlack(gapFrames);
+      const frames = framesIn(clip.start, end);
+      if (frames > 0) {
+        const id = videoSegments.length;
+        const geometry = calculateGeometry(media, project.canvas, clip);
+        const transform = exportTransform(geometry, { w: width, h: height }, project.canvas, clip);
+        const filters = [`trim=start=${numberArg(clip.srcStart)}:end=${numberArg(clip.srcEnd)}`, ...exportSpeedVideo(clip.speed), ...exportCrop(geometry.crop), ...exportFlip(clip), ...transform.filters, `fps=${frameRate}:eof_action=pass`];
+        graph.push(`[${branch(clip.mediaId, 'video')}]${filters.join(',')}[image${id}]`);
+        graph.push(`${background(frames)}[bg${id}]`);
+        graph.push(`[bg${id}][image${id}]overlay=x=${numberArg(transform.left)}:y=${numberArg(transform.top)}:format=yuv444,trim=end_frame=${frames},format=yuv420p[v${id}]`);
+        videoSegments.push(`v${id}`);
+      }
     }
-    if (media.hasAudio) graph.push(`[${branch(clip.mediaId, 'audio')}]atrim=start=${numberArg(clip.srcStart)}:end=${numberArg(clip.srcEnd)},asetpts=PTS-STARTPTS,${[...exportSpeed(clip.speed), ...exportVolume(clip.volume)].join(',')},aresample=48000,aformat=sample_fmts=fltp:channel_layouts=stereo,apad,atrim=duration=${t}[a${id}]`);
-    else graph.push(`anullsrc=r=48000:cl=stereo,atrim=duration=${t},asetpts=PTS-STARTPTS[a${id}]`);
-    segments.push({ v: `v${id}`, a: `a${id}` }); cursor = clip.start + length;
+    if (media.hasAudio) {
+      const label = `a${audioSegments.length}`;
+      graph.push(`[${branch(clip.mediaId, 'audio')}]atrim=start=${numberArg(clip.srcStart)}:end=${numberArg(clip.srcEnd)},asetpts=PTS-STARTPTS,${[...exportSpeed(clip.speed), ...exportVolume(clip.volume)].join(',')},aresample=48000,aformat=sample_fmts=fltp:channel_layouts=stereo,apad,atrim=duration=${t}[${label}]`);
+      audioSegments.push(label);
+    } else addSilence(clipDuration(clip));
+    cursor = end;
   }
-  if (!segments.length) addGap(duration);
-  if (options.format === 'mp4') graph.push(`${segments.map(s => `[${s.v}][${s.a}]`).join('')}concat=n=${segments.length}:v=1:a=1[basev][mainmix]`);
-  else graph.push(`${segments.map(s => `[${s.a}]`).join('')}concat=n=${segments.length}:v=0:a=1[mainmix]`);
+  if (!audioSegments.length) addSilence(duration);
+  graph.push(`${audioSegments.map(label => `[${label}]`).join('')}concat=n=${audioSegments.length}:v=0:a=1[mainmix]`);
 
   let currentVideo = 'basev';
   if (options.format === 'mp4') {
+    if (!videoSegments.length) addBlack(Math.max(1, frameAt(duration)));
+    // Rebuild timestamps from the frame count so concat's segment durations cannot shift cuts.
+    graph.push(`${videoSegments.map(label => `[${label}]`).join('')}concat=n=${videoSegments.length}:v=1:a=0,settb=1/${frameRate},setpts=N[basev]`);
     for (const [index, layer] of overlays.entries()) {
       let image: string;
       if (layer.type === 'text') {
@@ -111,7 +134,7 @@ export function buildRenderPlan(project: Project, options: Pick<ExportOptions, '
         const g = layerGeometry(media, project.canvas, layer), k = width / project.canvas.w;
         const w = Math.max(2, Math.floor(g.width * k / 2) * 2), h = Math.max(2, Math.floor(g.height * k / 2) * 2);
         image = `layer${index}`;
-        if (layer.type === 'image') graph.push(`[${branch(media.id, 'video')}]format=rgba,scale=${w}:${h},setsar=1,setpts=PTS-STARTPTS[${image}]`);
+        if (layer.type === 'image') graph.push(`[${branch(media.id, 'video')}]format=rgba,${layer.crop ? exportCrop(g.crop).join(',') + ',' : ''}scale=${w}:${h},setsar=1,setpts=PTS-STARTPTS[${image}]`);
         else {
           const speed = layer.speed ?? 1, from = layer.srcStart ?? 0, to = layer.srcEnd ?? media.duration;
           graph.push(`[${branch(media.id, 'video')}]trim=start=${numberArg(from)}:end=${numberArg(to)},${exportSpeedVideo(speed).join(',')},scale=${w}:${h},setsar=1,fps=${numberArg(fps)},tpad=stop_mode=clone:stop_duration=${numberArg(1 / fps)},trim=duration=${numberArg(layer.duration)},setpts=PTS+${numberArg(layer.start)}/TB[${image}]`);

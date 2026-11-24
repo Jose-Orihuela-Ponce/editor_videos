@@ -1,3 +1,4 @@
+import CropOverlay from './CropOverlay';
 import { useEffect, useRef, useState } from 'react';
 import type { CSSProperties, PointerEvent, RefObject } from 'react';
 import type { Clip, Project } from '../core/project';
@@ -18,7 +19,6 @@ export default function PreviewFrame({ project, time, videoRef, cropEditing, sel
   const clip = cropEditing && selected?.id === current?.id ? selected : current;
   const media = project.media.find(m => m.id === clip?.mediaId);
   const editCrop = cropEditing && !!clip && clip.id === selected?.id;
-  const drag = useRef<{ x: number; y: number; width: number; height: number; crop: Clip['crop']; handle: string; group: string; id: string } | null>(null);
   const positionDrag = useRef<{ x: number; y: number; width: number; height: number; posX: number; posY: number; id: string; group: string; moved: boolean; snapX: boolean; snapY: boolean } | null>(null);
   const [guides, setGuides] = useState<{ id: string; x: boolean; y: boolean } | null>(null);
   function endPosition() { positionDrag.current = null; setGuides(null); }
@@ -59,39 +59,11 @@ export default function PreviewFrame({ project, time, videoRef, cropEditing, sel
     try { useProjectStore.getState().edit(p => updateClipSettings(p, d.id, { posX, posY }), d.group); }
     catch (error) { endPosition(); onNotice(error instanceof Error ? error.message : String(error), true); }
   }
-  function begin(event: PointerEvent<HTMLDivElement>) {
-    if (!editCrop || !clip || event.button !== 0) return;
-    const handle = (event.target as HTMLElement).dataset.handle;
-    if (!handle) return;
-    event.preventDefault(); event.currentTarget.setPointerCapture(event.pointerId);
-    const rect = event.currentTarget.getBoundingClientRect();
-    drag.current = { x: event.clientX, y: event.clientY, width: rect.width, height: rect.height, crop: { ...clip.crop }, handle, group: crypto.randomUUID(), id: clip.id };
-  }
-  function move(event: PointerEvent<HTMLDivElement>) {
-    const d = drag.current; if (!d || !clip || d.id !== clip.id) return;
-    const dx = (event.clientX - d.x) / d.width, dy = (event.clientY - d.y) / d.height;
-    const c = d.crop, clamp = (v: number, min: number, max: number) => Math.max(min, Math.min(max, v));
-    let crop = { ...c };
-    if (d.handle === 'move') crop = { ...c, x: clamp(c.x + dx, 0, 1 - c.w), y: clamp(c.y + dy, 0, 1 - c.h) };
-    else {
-      const minW = 2 / (media?.w || project.canvas.w), minH = 2 / (media?.h || project.canvas.h);
-      const left = d.handle.includes('w') ? clamp(c.x + dx, 0, c.x + c.w - minW) : c.x;
-      const top = d.handle.includes('n') ? clamp(c.y + dy, 0, c.y + c.h - minH) : c.y;
-      const right = d.handle.includes('e') ? clamp(c.x + c.w + dx, c.x + minW, 1) : c.x + c.w;
-      const bottom = d.handle.includes('s') ? clamp(c.y + c.h + dy, c.y + minH, 1) : c.y + c.h;
-      crop = { x: left, y: top, w: right - left, h: bottom - top };
-    }
-    try { useProjectStore.getState().edit(p => updateClipSettings(p, d.id, { crop }), d.group); }
-    catch (error) { drag.current = null; onNotice(String(error instanceof Error ? error.message : error), true); }
-  }
   return <>
     <div className="preview-transform" style={frameStyle}>
       <video ref={videoRef} className="preview-video" style={videoStyle} playsInline crossOrigin="anonymous" aria-label="Vista previa del proyecto" />
-      {editCrop && clip && <div className="crop-overlay" onPointerDown={begin} onPointerMove={move} onPointerUp={() => { drag.current = null; }} onPointerCancel={() => { drag.current = null; }}>
-        <div className="crop-box" data-handle="move" style={{ left: percent(clip.crop.x), top: percent(clip.crop.y), width: percent(clip.crop.w), height: percent(clip.crop.h) }}>
-          {['nw', 'ne', 'sw', 'se'].map(handle => <span key={handle} className={`crop-handle ${handle}`} data-handle={handle} />)}
-        </div>
-      </div>}
+      {editCrop && clip && <CropOverlay key={clip.id} crop={clip.crop} sourceWidth={media?.w || project.canvas.w} sourceHeight={media?.h || project.canvas.h} onNotice={onNotice}
+        onChange={(crop, group) => useProjectStore.getState().edit(p => updateClipSettings(p, clip.id, { crop }), group)} />}
     </div>
     {!editCrop && clip && moveStyle && <button type="button" className={`preview-move-target ${clip.id === selected?.id ? 'selected' : ''}`} style={moveStyle}
       aria-label="Mover video en la vista previa" title="Arrastrar para mover · Alt para mover sin imán" disabled={editingDisabled}

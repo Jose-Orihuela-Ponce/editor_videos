@@ -4,22 +4,26 @@ export interface Media {
   duration: number; w?: number; h?: number; fps?: number; hasAudio: boolean;
   thumbnail?: string;
 }
+export interface CropRect { x: number; y: number; w: number; h: number }
+export const fullCrop: CropRect = { x: 0, y: 0, w: 1, h: 1 };
+
 export interface ClipSettings {
   speed: number; volume: number; flipH: boolean; flipV: boolean;
   zoom: number; stretchX: number; stretchY: number; posX: number; posY: number;
-  crop: { x: number; y: number; w: number; h: number };
+  crop: CropRect;
 }
 export interface Clip extends ClipSettings {
   id: string; mediaId: string; start: number; srcStart: number; srcEnd: number;
 }
 export interface TextStyle {
   font: string; size: number; color: string; bgColor?: string;
+  letterSpacing?: number; lineHeight?: number;
   bgOpacity?: number; bgEnabled?: boolean; bold?: boolean; italic?: boolean; underline?: boolean; opacity?: number; align: 'left' | 'center' | 'right';
 }
 export interface Overlay {
   id: string; type: 'text' | 'image' | 'video'; start: number; duration: number;
   posX: number; posY: number; scale: number; track?: number;
-  text?: string; style?: TextStyle; mediaId?: string;
+  text?: string; style?: TextStyle; mediaId?: string; crop?: CropRect;
   srcStart?: number; srcEnd?: number; speed?: number; volume?: number;
 }
 export interface AudioClip {

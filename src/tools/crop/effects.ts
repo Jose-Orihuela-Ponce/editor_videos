@@ -1,6 +1,6 @@
 import type { ClipSettings } from '../../core/project';
 
-export function previewCrop(media: { w?: number; h?: number }, canvas: { w: number; h: number }, settings: ClipSettings) {
+export function previewCrop(media: { w?: number; h?: number }, canvas: { w: number; h: number }, settings: Pick<ClipSettings, 'crop'>) {
   const sourceW = media.w && Number.isFinite(media.w) && media.w > 0 ? Math.round(media.w) : canvas.w;
   const sourceH = media.h && Number.isFinite(media.h) && media.h > 0 ? Math.round(media.h) : canvas.h;
   const x = Math.min(sourceW - 1, Math.round(settings.crop.x * sourceW));

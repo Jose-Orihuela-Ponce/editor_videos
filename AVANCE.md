@@ -1,29 +1,37 @@
 # Avance
 
-Actualizado: 5 de noviembre de 2026.
+Actualizado: 23 de noviembre de 2026.
 
-## Estado
+## Estado y continuación
 
-- Etapas 1–6 y modo automático de YouTube implementados. Whisper (etapa 7) sigue futuro y opcional.
-- App instalada en `C:/Users/jose/AppData/Local/Programs/Editor/`; un único acceso de escritorio conserva `--data-dir` y `--downloads-dir` (también en Inicio). Sin rutas explícitas, otras instalaciones usan Documentos/Editor por compatibilidad.
-- Datos, proyecto, estilos, caché y preferencias: `C:/Users/jose/Desktop/workspace/editor_videos/datos/`, excluido de Git. Perfil WebView2: `datos/WebView/EBWebView/`. Migración completada; ya no se usa Documentos/Editor en este equipo.
-- Originales anteriores y nuevos: `C:/Users/jose/Videos/ediciones/descargas/<id>/original.mkv`, con `descarga.json`. MP4 finales: `C:/Users/jose/Videos/ediciones/` o la carpeta elegida.
-- «Procesar otro» tras éxito limpia enlace, nombre y resultados/avisos, enfoca el enlace y conserva opciones y archivos; no inicia una descarga. Fallo/cancelación permiten reintentar con «Procesar».
-- Nombre automático editable antes y bloqueado durante el trabajo; vacío usa título de YouTube. Usa el último estilo manual de la orientación elegida, con ajustes y textos completos. Velocidad admite 1,04× con paso 0,01×.
-- Descarga prefiere 1080p/720p y permite la mejor inferior sin agrandar. Cancelar descarga limpia solo el trabajo incompleto; el original completo se conserva aunque se cancele exportación.
-- Inicio/formulario compactos y editor con desplazamiento interno. Ventana inicial 1000 × 620, mínimo 720 × 420, centrada y ajustada al área de trabajo.
-- Dependencias incluidas: FFmpeg/FFprobe 9.0.2, yt-dlp 2026.10.26, Node 22.12.0. Ejecutables y datos privados excluidos de Git.
-- GitHub: `https://github.com/Jose-Orihuela-Ponce/editor_videos.git`, rama `main`. Publicación solicitada de las rutas, «Procesar otro» y limpieza; punto anterior `01dd434`.
+- Editor manual y producción desde el chat separados, con motor compartido de estilos, geometría, textos y exportación. Etapas 1–6 implementadas; Whisper sigue futuro y opcional.
+- Entrada: `scripts/process-link.mjs`; entrega y reintentos: `scripts/upload-drive.mjs`; autorización local: `scripts/authorize-drive.mjs --credentials RUTA_JSON`. Guía operativa: `Flujo automatico de enlace a video editado.md`.
+- Las skills de miniaturas y corrección funcionan por conversación. Fuentes del proyecto en `skills/crear-miniaturas/` y `skills/corregir-textos/`. La miniatura es independiente del MP4.
 
-## Comprobado
+## Portabilidad preparada
 
-- Limpieza: 24 selectores CSS de pantallas retiradas, estado/API de preajustes sin llamadas e importación Rust no usada eliminados. Temporales, instaladores, muestras y scripts de tareas finalizadas retirados: 1081,2 MiB; ocho archivos de proyectos/estilos/descargas conservaron SHA-256. Evidencias pequeñas en `.local/evidencias/`; se retiraron los respaldos binarios obsoletos.
-- Verificación final: 51 pruebas JavaScript, 16 Rust, compilación web y 19 distribuciones de interfaz aprobadas. Incluye persistencia, historial, cancelación que conserva archivos existentes y flujo «Procesar otro». Evidencia `.local/evidencias/interfaz.json`.
-- Migración nativa anterior comprobada en Tauri: proyecto abre, estilo coincide, preferencias conservadas y tres originales localizables; perfil de 311 archivos trasladado con huellas verificadas. Evidencias `.local/evidencias/migracion/`.
-- Workflow de GitHub corregido en `01dd434`: usa FFmpeg real en vez de shims de Chocolatey. Su ejecución `41966889341` terminó correctamente.
+- El usuario autorizó preparar el flujo completo para la otra PC, que aún conserva la versión Manual/Automático. Leer **INSTALACION_EN_OTRA_PC.md** y **PRUEBA_DE_REPRODUCCION.md** después de actualizar el repositorio.
+- `npm run skills:setup` habilita las dos skills en `.agents/skills/` desde las fuentes del proyecto; `skills:check` detecta actualizaciones. No se copia el perfil personal y el sincronizador protege modificaciones locales. Repetir tras obtener commits.
+- `npm run doctor` comprueba dependencias y copias de skills. WebView2, herramientas del chat y comportamiento visual de Tauri se verifican aparte. En la migración usar `--executable` con el ejecutable recién compilado para evitar una copia automática antigua.
+- `references/production/horizontal.json` conserva una copia del estilo de estas pruebas, sin rutas ni credenciales. Usarla en datos aislados, sin sobrescribir los estilos del otro equipo.
+- Dos recetas aprobadas con URLs, tiempos, textos, fuentes, PNG y prompts históricos en `skills/crear-miniaturas/references/`. `npm run thumbnail:reproduce -- --case approved-01` o `approved-02` prepara capturas y una petición para generar/revisar otra miniatura; no entrega a Drive.
+- Se comprobaron aquí ambas descargas nuevas desde YouTube y sus capturas. Se generaron dos reproducciones nuevas y se revisaron; la primera omitió comillas, se corrigió solo esa parte y se reforzó el prompt del helper. Revisión técnica favorable, sin sustituir patrones ni simular aprobación del usuario. Informe público: `references/thumbnails/COMPROBACION_PORTABILIDAD.md`; imágenes e informes en `.local/reproductions/`.
+- Cierre del repositorio: **81 pruebas en 19 archivos y 17 pruebas Rust correctas**, compilación web, sincronización de skills y doctor correctos. Incluye persistencia, historial y exportaciones. Revisión de secretos en archivos, índice e historial sin hallazgos; inventario publicable de 163 archivos, sin videos completos ni adjuntos.
+- `.codex-attachments/` excluido tras detectar la foto del último trabajo como archivo nuevo; el control rechaza también adjuntos y medios completos añadidos a la fuerza. Los PNG aprobados permanecen publicables. Credenciales y producciones privadas se conservan localmente.
+- Este cierre reúne producción, seguridad y portabilidad en un **commit local; sin push**. No se ha instalado ni probado físicamente la otra PC; su agente debe generar y revisar resultados propios.
 
-## Retomar aquí
+## Producciones conservadas
 
-- El instalador NSIS desactualizado se eliminó. Generar uno nuevo con `npx tauri build --bundles nsis` y conservar argumentos de rutas al reinstalar. El ejecutable instalado funciona con la configuración nueva.
-- No publicar `datos/` ni `.local/`; al trasladar a otro equipo copiar datos aparte y ajustar rutas. Variables `EDITOR_DATA_DIR`/`EDITOR_DOWNLOAD_DIR` aíslan las pruebas, incluido WebView2.
-- Ver README y plan. Pendientes: sentido del eje Y y rendimiento largo/4K; manual referencia originales sin copiarlos automáticamente. Fuera del modo automático: otros proveedores, cuentas/cookies, lotes e historial persistente de trabajos.
+- **Marco Vinelli**: enlace `dYk4DuDJyz4`, «Mi estilo» horizontal; MP4 de 36:29,77, H.264/AAC, 834 × 470 y 230.063.939 bytes. Decodificación completa, tres fotogramas y MD5 local/remoto comprobados; Drive `verified` y descarga disponible, reproducción en línea aún procesándose al consultar. Registro privado: `.local/produccion/marco-vinelli.json`. Miniatura E4 + P2 con «Cuando llegamos, no encontramos avances» y foto de rescate en inundación aportada por el usuario, centrada en el círculo. Versión 1 generada y revisada, pendiente de valoración; sin subir a Drive.
+- **Roxana Rocha**: MP4 de 15:04,17, H.264/AAC, 834 × 470 y 131.028.825 bytes; decodificación completa y tres fotogramas comprobados, Drive `verified`. Registro privado en `.local/produccion/roxana-rocha.json`. Miniatura E1 + P2 con Rafael López Aliaga y «Hay que cambiar la ley electoral», generada y revisada; pendiente de valoración antes de añadirla a Drive. Título corregido: **Diputada Roxana Rocha sobre el JNE**.
+- **Fernando Rospigliosi**: MP4 de 25:58,59, H.264/AAC, 834 × 470 y 138.570.426 bytes; decodificado y Drive `verified`. Registro privado en `.local/produccion/fernando-rospigliosi.json`. Se recuperó una interrupción usando el original, filtro y texto de Tauri, sin descargar de nuevo. Miniatura E2 + P1 con Carlos Espá y «Estamos evaluando a Carlos Espá», pendiente de valoración. Título corregido: **Senador Fernando Rospigliosi sobre Carlos Espá**.
+- Las dos miniaturas recientes son borradores; no se convierten en referencias aprobadas. Sus fuentes, prompts y hashes permanecen en cada trabajo y en `.local/produccion/`. La disponibilidad de reproducción en Drive se consulta por separado de la transferencia ya verificada.
+- **Juan Paredes**: prueba real completa aprobada, con video y miniatura entregados y descarga móvil confirmada. Rutas y enlaces privados conservados en `.local/revision-github/avance-antes.md` y `flujo-antes.md`.
+
+## Pendientes y decisiones vigentes
+
+- Procesamiento de videos cerrado por ahora. Marco Vinelli: título corregido **Ministro Marco Vinelli sobre el fenómeno de El Niño**; miniatura E4 + P2 con foto aportada guardada, sin aprobación explícita de subida. Conservar separados referencia, texto de miniatura y título de publicación. Siguiente paso del repo: publicar el commit local cuando el usuario solicite la subida; después seguir `INSTALACION_EN_OTRA_PC.md` en el otro equipo.
+- Mantener OAuth en **Pruebas** por decisión del usuario. No se cambió Google Console; el usuario pasará después a producción y reautorizará. El refresh token de Drive de una app externa en Pruebas caduca a los siete días desde el consentimiento; reautorizar y reintentar la entrega existente sin repetir edición.
+- `.env` conserva las credenciales fuera de Git y de las respuestas. No hay cargas ni procesos de autorización pendientes. La revisión de seguridad es preventiva con reglas limitadas.
+- Lectura de JSON con reintentos acotados ante bloqueos transitorios Windows/OneDrive comprobada; no oculta datos corruptos ni bloqueos persistentes.
+- Incidencias heredadas pendientes de reproducir en Tauri: guardado desde copias desactualizadas, vista previa con audio faltante, arrastre en modo libre, pausa al guardar y MP3 con imagen faltante. No se declaran resueltas por esta preparación.

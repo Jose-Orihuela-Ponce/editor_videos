@@ -105,6 +105,10 @@ pub struct TextStyle {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub opacity: Option<f64>,
     pub align: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub letter_spacing: Option<f64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub line_height: Option<f64>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -124,6 +128,8 @@ pub struct Overlay {
     pub text: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub style: Option<TextStyle>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub crop: Option<Crop>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub media_id: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -293,6 +299,10 @@ impl Project {
             }
         }
         for overlay in &self.overlays {
+            let source = self
+                .media
+                .iter()
+                .find(|m| Some(&m.id) == overlay.media_id.as_ref());
             if !item_ids.insert(&overlay.id)
                 || overlay.id.is_empty()
                 || !["text", "image", "video"].contains(&overlay.kind.as_str())
@@ -311,11 +321,21 @@ impl Project {
                 || overlay.pos_x.abs() > self.canvas.w as f64 * 2.0
                 || overlay.pos_y.abs() > self.canvas.h as f64 * 2.0
                 || overlay.track.is_some_and(|track| track > 1000)
-                || (overlay.kind == "image"
-                    && !self
-                        .media
-                        .iter()
-                        .any(|m| Some(&m.id) == overlay.media_id.as_ref() && m.kind == "image"))
+                || (overlay.kind == "image" && !source.is_some_and(|m| m.kind == "image"))
+                || overlay.crop.as_ref().is_some_and(|crop| {
+                    let width = source.and_then(|m| m.w).unwrap_or(self.canvas.w) as f64;
+                    let height = source.and_then(|m| m.h).unwrap_or(self.canvas.h) as f64;
+                    overlay.kind != "image"
+                        || [crop.x, crop.y, crop.w, crop.h]
+                            .iter()
+                            .any(|v| !v.is_finite())
+                        || crop.x < 0.0
+                        || crop.y < 0.0
+                        || crop.w < (2.0 / width).min(1.0) - 1e-8
+                        || crop.h < (2.0 / height).min(1.0) - 1e-8
+                        || crop.x + crop.w > 1.000001
+                        || crop.y + crop.h > 1.000001
+                })
                 || (overlay.kind == "video"
                     && !self.media.iter().any(|m| {
                         Some(&m.id) == overlay.media_id.as_ref()
@@ -339,6 +359,10 @@ impl Project {
                         || overlay.style.as_ref().is_none_or(|style| {
                             !style.size.is_finite()
                                 || !(8.0..=500.0).contains(&style.size)
+                                || style
+                                    .letter_spacing
+                                    .is_some_and(|v| !(-30.0..=100.0).contains(&v))
+                                || style.line_height.is_some_and(|v| !(0.5..=3.0).contains(&v))
                                 || !["left", "center", "right"].contains(&style.align.as_str())
                                 || style
                                     .opacity

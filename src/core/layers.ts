@@ -1,4 +1,5 @@
 import type { AudioClip, Media, Overlay, Project, TextStyle } from './project';
+import { validateImageCrop } from './layerGeometry';
 import { clipDuration } from './timeline';
 
 export const defaultTextStyle = (): TextStyle => ({ font: 'Montserrat', size: 80, color: '#ffffff', bgColor: '#000000', bgOpacity: 0.5, bgEnabled: true, bold: false, italic: false, underline: false, opacity: 1, align: 'center' });
@@ -65,8 +66,20 @@ export function updateOverlay(project: Project, id: string, patch: Partial<Overl
   const media = project.media.find(source => source.id === next.mediaId);
   if (next.type === 'video' && (!media || media.kind !== 'video' || ![next.srcStart, next.srcEnd, next.speed, next.volume].every(v => typeof v === 'number' && Number.isFinite(v)) || next.srcStart! < 0 || next.srcEnd! > media.duration + 1e-6 || next.srcEnd! <= next.srcStart! || next.speed! < 0.25 || next.speed! > 4 || next.volume! < 0 || next.volume! > 2)) throw new Error('Los ajustes del video superpuesto no son válidos.');
   if (next.type === 'image' && media?.kind !== 'image') throw new Error('No se encontró la imagen original.');
+  if (next.crop) {
+    if (next.type !== 'image' || !media) throw new Error('El recorte de la imagen no es válido.');
+    validateImageCrop(next.crop, media, project.canvas);
+  }
+  if (next.type === 'text' && next.style) {
+    const { letterSpacing = 0, lineHeight = 1.2 } = next.style;
+    if (!Number.isFinite(letterSpacing) || letterSpacing < -30 || letterSpacing > 100
+      || !Number.isFinite(lineHeight) || lineHeight < 0.5 || lineHeight > 3) {
+      throw new Error('El espaciado del texto no es válido.');
+    }
+  }
   if (next.type === 'text' && (!next.style || typeof next.text !== 'string' || next.text.length > 5000 || !Number.isFinite(next.style.size) || next.style.size < 8 || next.style.size > 500 || !/^#[0-9a-f]{6}$/i.test(next.style.color) || (next.style.bgColor && !/^#[0-9a-f]{6}$/i.test(next.style.bgColor)) || (next.style.bgOpacity !== undefined && (!Number.isFinite(next.style.bgOpacity) || next.style.bgOpacity < 0 || next.style.bgOpacity > 1)) || (next.style.opacity !== undefined && (!Number.isFinite(next.style.opacity) || next.style.opacity < 0 || next.style.opacity > 1)))) throw new Error('El estilo o contenido del texto no es válido.');
   Object.assign(item, next);
+  if (next.crop === undefined) delete item.crop;
 }
 export function updateAudio(project: Project, id: string, patch: Partial<AudioClip>) {
   const item = project.audio.find(layer => layer.id === id); if (!item) return;

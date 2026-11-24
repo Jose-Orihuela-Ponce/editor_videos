@@ -165,8 +165,17 @@ pub fn download(
     let folder = parent.join(id.to_string());
     fs::create_dir(&folder).map_err(|e| format!("No se pudo crear la carpeta del trabajo: {e}"))?;
     let result = download_into(
-        &folder, downloader, node, ffmpeg, ffprobe, &url, &selector,
-        maximum_resolution, job_id, cancel, report,
+        &folder,
+        downloader,
+        node,
+        ffmpeg,
+        ffprobe,
+        &url,
+        &selector,
+        maximum_resolution,
+        job_id,
+        cancel,
+        report,
     );
     if result.as_ref().map(|r| r.cancelled).unwrap_or(true) {
         // Only the unique, validated work directory created by this invocation is disposable.
@@ -344,7 +353,11 @@ fn download_into(
     });
     let media = media::probe(&path, ffprobe)?;
     if media.kind != "video"
-        || !valid_resolution(media.w.unwrap_or(0), media.h.unwrap_or(0), maximum_resolution)
+        || !valid_resolution(
+            media.w.unwrap_or(0),
+            media.h.unwrap_or(0),
+            maximum_resolution,
+        )
     {
         return Err("La descarga no contiene video válido dentro de la calidad elegida.".into());
     }
@@ -378,13 +391,30 @@ mod tests {
         fs::create_dir_all(&existing).unwrap();
         fs::write(existing.join("original.mkv"), b"original retained").unwrap();
         let job = uuid::Uuid::new_v4().to_string();
-        let result = download(&parent, Path::new("unused"), Path::new("unused"), Path::new("unused"), Path::new("unused"),
-            "https://youtu.be/BaW_jenozKc", "720", &job, &AtomicBool::new(true), |_| {}).unwrap();
+        let result = download(
+            &parent,
+            Path::new("unused"),
+            Path::new("unused"),
+            Path::new("unused"),
+            Path::new("unused"),
+            "https://youtu.be/BaW_jenozKc",
+            "720",
+            &job,
+            &AtomicBool::new(true),
+            |_| {},
+        )
+        .unwrap();
         assert!(result.cancelled);
         assert!(!parent.join(job).exists());
         assert!(!parent.join("Automaticos").exists());
-        assert_eq!(fs::read(existing.join("original.mkv")).unwrap(), b"original retained");
-        assert_eq!(fs::canonicalize(&root).unwrap().parent(), Some(base.as_path()));
+        assert_eq!(
+            fs::read(existing.join("original.mkv")).unwrap(),
+            b"original retained"
+        );
+        assert_eq!(
+            fs::canonicalize(&root).unwrap().parent(),
+            Some(base.as_path())
+        );
         fs::remove_dir_all(root).unwrap();
     }
     #[test]
@@ -486,13 +516,21 @@ mod tests {
             (
                 "sd_fallback",
                 "1080",
-                vec![video("480", 854, 470), video("360", 640, 352), audio.clone()],
+                vec![
+                    video("480", 854, 470),
+                    video("360", 640, 352),
+                    audio.clone(),
+                ],
                 Some("480+audio"),
             ),
             (
                 "cropped_hd_fallback",
                 "720",
-                vec![video("cropped720", 1280, 704), video("1080", 1920, 1080), audio.clone()],
+                vec![
+                    video("cropped720", 1280, 704),
+                    video("1080", 1920, 1080),
+                    audio.clone(),
+                ],
                 Some("cropped720+audio"),
             ),
             (

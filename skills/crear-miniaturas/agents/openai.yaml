@@ -1,0 +1,4 @@
+interface:
+  display_name: "Miniaturas de entrevistas"
+  short_description: "Capturas a elección y diseño de miniaturas"
+  default_prompt: "Usa $crear-miniaturas para preparar candidatos y componer la miniatura de esta entrevista con mi estilo."

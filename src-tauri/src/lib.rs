@@ -1,4 +1,4 @@
-mod automatic;
+mod production;
 mod export;
 mod media;
 mod model;
@@ -20,87 +20,21 @@ async fn get_library(repo: tauri::State<'_, Repository>) -> Result<Library, Stri
 }
 
 #[tauri::command]
-async fn download_youtube(
-    url: String,
-    quality: String,
-    job_id: String,
-    paths: tauri::State<'_, storage::StoragePaths>,
-    state: tauri::State<'_, export::ExportState>,
-    app: tauri::AppHandle,
-) -> Result<automatic::DownloadResult, String> {
-    let url = automatic::youtube_url(&url)?;
-    let root = paths.downloads.clone();
-    let downloader = media::tool_path(&app, "yt-dlp")?;
-    let node = media::tool_path(&app, "node")?;
-    let ffmpeg = media::tool_path(&app, "ffmpeg")?;
-    let ffprobe = media::tool_path(&app, "ffprobe")?;
-    let cancel = state.reserve(&job_id)?;
-    let result = tauri::async_runtime::spawn_blocking(move || {
-        automatic::download(
-            &root,
-            &downloader,
-            &node,
-            &ffmpeg,
-            &ffprobe,
-            &url,
-            &quality,
-            &job_id,
-            &cancel,
-            |progress| {
-                let _ = app.emit("automatic-progress", progress);
-            },
-        )
-    })
-    .await
-    .map_err(|e| e.to_string());
-    state.finish();
-    result?
-}
-
-#[tauri::command]
-async fn get_automatic_tools(app: tauri::AppHandle) -> Vec<ToolStatus> {
-    tauri::async_runtime::spawn_blocking(move || {
-        ["yt-dlp", "node"].iter().map(|name| {
-            let result = media::tool_path(&app, name).and_then(|path| {
-                let output = media::command(&path).arg("--version").output().map_err(|e| e.to_string())?;
-                if !output.status.success() { return Err(format!("No se pudo ejecutar {name}.")); }
-                Ok(String::from_utf8_lossy(&output.stdout).trim().to_string())
-            });
-            ToolStatus {
-                name: name.to_string(), available: result.is_ok(),
-                version: result.unwrap_or_else(|_| format!("El motor de descarga no está disponible ({name}). Reinstala la versión completa de la aplicación.")),
-            }
-        }).collect()
-    }).await.unwrap_or_default()
-}
-
-#[tauri::command]
-fn reveal_automatic_output(path: String) -> Result<(), String> {
-    let path = media::local_path(Path::new(&path))?;
-    if path.extension().and_then(|s| s.to_str()) != Some("mp4") {
-        return Err("Selecciona un video MP4 exportado.".into());
-    }
-    media::command(Path::new("explorer.exe"))
-        .arg(format!("/select,{}", path.display()))
-        .spawn()
-        .map_err(|e| e.to_string())?;
-    Ok(())
-}
-
-#[tauri::command]
-fn load_preset(
+fn load_presets(
     orientation: Orientation,
     repo: tauri::State<'_, Repository>,
-) -> Result<presets::Preset, String> {
+) -> Result<Vec<presets::NamedPreset>, String> {
     presets::load(&repo, orientation)
 }
 #[tauri::command]
-fn save_preset(
+fn save_named_preset(
     orientation: Orientation,
     preset: presets::Preset,
+    name: Option<String>,
+    replace_id: Option<String>,
     repo: tauri::State<'_, Repository>,
-) -> Result<presets::Preset, String> {
-    presets::save(&repo, orientation, preset)
+) -> Result<Vec<presets::NamedPreset>, String> {
+    presets::save(&repo, orientation, preset, name, replace_id)
 }
 
 #[tauri::command]
@@ -298,23 +232,35 @@ async fn get_tools(app: tauri::AppHandle) -> Vec<ToolStatus> {
 
 pub fn run() {
     let paths = storage::StoragePaths::resolve().expect("No se pudieron localizar las carpetas de Editor");
-    let webview_directory = paths.data.join("WebView");
+    if production::write_locations(&paths).expect("No se pudieron consultar las carpetas") { return; }
+    let job = production::AutomationJob::from_args().expect("No se pudo leer el trabajo automático");
+    let automated = job.request.is_some();
+    let webview_directory = if automated { job.webview_directory() } else { paths.data.join("WebView") };
     tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
         .manage(Repository::new(paths.data.clone()))
         .manage(paths)
+        .manage(job)
         .manage(export::ExportState::default())
         .setup(move |app| {
             std::fs::create_dir_all(&webview_directory)?;
-            tauri::WebviewWindowBuilder::from_config(app, &app.config().app.windows[0])?
-                .data_directory(webview_directory)
-                .build()?;
+            let mut window = tauri::WebviewWindowBuilder::from_config(app, &app.config().app.windows[0])?
+                .data_directory(webview_directory);
+            if automated {
+                window = window.visible(false);
+                production::AutomationJob::monitor(app.handle().clone());
+            }
+            window.build()?;
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
+            production::automatic_job_request,
+            production::automatic_job_cancelled,
+            production::automatic_job_progress,
+            production::automatic_job_finish,
             get_library,
-            load_preset,
-            save_preset,
+            load_presets,
+            save_named_preset,
             missing_media,
             prepare_proxy,
             get_export_folder,
@@ -325,9 +271,7 @@ pub fn run() {
             import_media,
             export_project,
             cancel_export,
-            download_youtube,
-            get_automatic_tools,
-            reveal_automatic_output
+            production::download_youtube,
         ])
         .run(tauri::generate_context!())
         .expect("No se pudo iniciar Editor");

@@ -1,8 +1,8 @@
-import { createEmptyProject } from './project';
-import type { Media, Orientation } from './project';
-import { applyStyle } from './presets';
-import type { Preset } from './presets';
-import { makeClip } from './timeline';
+import { createEmptyProject } from '../core/project';
+import type { Media, Orientation } from '../core/project';
+import { applyStyle } from '../core/styles';
+import type { Preset } from '../core/styles';
+import { makeClip } from '../core/timeline';
 
 export type DownloadQuality = '1080' | '720';
 export interface DownloadResult { cancelled: boolean; media: Media | null; title: string; folder: string }

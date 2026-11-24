@@ -32,7 +32,16 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
     const past = group && last?.group === group ? [...state.past.slice(0, -1), entry] : [...state.past, entry];
     return { project, past: past.slice(-100), future: [] };
   }),
-  setOrientation: (orientation) => get().edit((p) => { p.orientation = orientation; p.canvas = { ...canvasFor(orientation), fps: p.canvas.fps }; }),
+  setOrientation: (orientation) => get().edit(p => {
+    if (p.orientation === orientation) return;
+    p.orientation = orientation;
+    p.canvas = { ...canvasFor(orientation), fps: p.canvas.fps };
+    const maxX = 2 * p.canvas.w, maxY = 2 * p.canvas.h;
+    for (const item of [...p.main, ...p.overlays]) {
+      item.posX = Math.max(-maxX, Math.min(maxX, item.posX));
+      item.posY = Math.max(-maxY, Math.min(maxY, item.posY));
+    }
+  }),
   setAutoJoin: (value) => get().edit((p) => {
     p.autoJoin = value;
     if (value) {

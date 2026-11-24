@@ -9,9 +9,11 @@ import { projectDuration } from '../core/timeline';
 import { useProjectStore } from '../core/store';
 import { useSession } from '../core/session';
 import { snapToCenter } from '../core/snapping';
+import CropOverlay from './CropOverlay';
+import { fullCrop } from '../core/project';
 import { drawText } from '../tools/text/render';
 
-interface Props { project: Project; controller: PlaybackController | null; suppressed: boolean; onSelect: (id: string) => void; onNotice: (text: string, error?: boolean) => void }
+interface Props { project: Project; controller: PlaybackController | null; suppressed: boolean; imageCropId?: string; onSelect: (id: string) => void; onNotice: (text: string, error?: boolean) => void }
 const percent = (value: number) => `${value * 100}%`;
 
 function AudioElement({ item, controller }: { item: AudioClip; controller: PlaybackController | null }) {
@@ -20,19 +22,20 @@ function AudioElement({ item, controller }: { item: AudioClip; controller: Playb
   return <audio ref={element} className="layer-audio-element" crossOrigin="anonymous" aria-label="Audio adicional" />;
 }
 
-function VisualLayer({ project, item, controller, suppressed, onSelect, onNotice }: Props & { item: Overlay }) {
+function VisualLayer({ project, item, controller, suppressed, imageCropId, onSelect, onNotice }: Props & { item: Overlay }) {
   const selected = useSession(s => s.selectedId === item.id), time = useSession(s => s.time);
   const wrapper = useRef<HTMLDivElement>(null), video = useRef<HTMLVideoElement>(null), textCanvas = useRef<HTMLCanvasElement>(null);
   const [bounds, setBounds] = useState({ left: 0, top: 0, width: 0, height: 0 });
   const [guides, setGuides] = useState<{ x: boolean; y: boolean } | null>(null);
   const drag = useRef<{ x: number; y: number; w: number; h: number; px: number; py: number; group: string; moved: boolean; snapX: boolean; snapY: boolean } | null>(null);
   const media = project.media.find(m => m.id === item.mediaId);
+  const editingCrop = item.type === 'image' && item.id === imageCropId;
   const duration = projectDuration(project);
   function display(current: number) {
     const t = current >= duration && duration > 0 ? Math.max(0, duration - 1 / project.canvas.fps) : current;
-    if (wrapper.current) wrapper.current.style.visibility = !suppressed && isActive(item.start, item.duration, t) ? 'visible' : 'hidden';
+    if (wrapper.current) wrapper.current.style.visibility = !suppressed && (editingCrop || (!imageCropId && isActive(item.start, item.duration, t))) ? 'visible' : 'hidden';
   }
-  useEffect(() => { display(time); return onPlaybackFrame(display); }, [item.start, item.duration, duration, project.canvas.fps, suppressed]);
+  useEffect(() => { display(time); return onPlaybackFrame(display); }, [item.start, item.duration, duration, project.canvas.fps, suppressed, imageCropId, editingCrop]);
   useEffect(() => { display(time); }, [time]);
   useEffect(() => { if (controller && video.current && item.type === 'video') return controller.registerLayer(item.id, video.current); }, [controller, item.id, item.type]);
   useLayoutEffect(() => {
@@ -49,13 +52,20 @@ function VisualLayer({ project, item, controller, suppressed, onSelect, onNotice
     void document.fonts.load(`${style.italic ? 'italic ' : ''}${style.bold ? 'bold ' : ''}${style.size}px ${JSON.stringify(style.font)}`).then(render).catch(() => {});
     return () => { cancelled = true; };
   }, [item, project.canvas]);
-  const geometry = media ? layerGeometry(media, project.canvas, item) : null;
+  const geometry = media ? layerGeometry(media, project.canvas, editingCrop ? { scale: 1, posX: 0, posY: 0 } : item) : null;
   const box = item.type === 'text' ? bounds : geometry;
   const style: CSSProperties = item.type === 'text' ? { inset: 0 } : geometry ? {
     left: percent(geometry.left / project.canvas.w), top: percent(geometry.top / project.canvas.h),
     width: percent(geometry.width / project.canvas.w), height: percent(geometry.height / project.canvas.h),
   } : { display: 'none' };
-  style.zIndex = 10 + (item.track ?? 0);
+  style.zIndex = editingCrop ? 10 : 10 + (item.track ?? 0);
+  const imageStyle: CSSProperties | undefined = item.type === 'image' && geometry ? {
+    position: 'absolute',
+    left: percent(-geometry.crop.x / geometry.crop.w),
+    top: percent(-geometry.crop.y / geometry.crop.h),
+    width: percent(geometry.sourceWidth / geometry.crop.w),
+    height: percent(geometry.sourceHeight / geometry.crop.h),
+  } : undefined;
   function begin(event: PointerEvent<HTMLButtonElement>) {
     if (event.button !== 0) return;
     const canvas = event.currentTarget.closest('.video-canvas') as HTMLElement | null;
@@ -77,10 +87,13 @@ function VisualLayer({ project, item, controller, suppressed, onSelect, onNotice
   const hitStyle = item.type === 'text' && box ? { left: percent(box.left / project.canvas.w), top: percent(box.top / project.canvas.h), width: percent(box.width / project.canvas.w), height: percent(box.height / project.canvas.h) } : { inset: 0 };
   return <>
     <div ref={wrapper} className="visual-layer" style={style}>
-      {item.type === 'text' ? <canvas ref={textCanvas} className="layer-text-canvas" /> : item.type === 'image' && media ? <img src={mediaUrl(media.path)} alt="" draggable={false} /> : item.type === 'video' ? <video ref={video} playsInline crossOrigin="anonymous" aria-label="Video superpuesto" /> : null}
-      <button type="button" className={`layer-hit-area ${selected ? 'selected' : ''}`} style={hitStyle} aria-label={`Mover ${item.type === 'text' ? 'texto' : item.type === 'image' ? 'imagen' : 'video superpuesto'} en la vista previa`} title="Arrastrar para mover · Alt para mover sin imán"
-        onPointerDown={begin} onPointerMove={move} onPointerUp={() => { drag.current = null; setGuides(null); }} onPointerCancel={() => { drag.current = null; setGuides(null); }} onLostPointerCapture={() => { drag.current = null; setGuides(null); }} onClick={e => { if (e.detail === 0) onSelect(item.id); }} />
+      {item.type === 'text' ? <canvas ref={textCanvas} className="layer-text-canvas" /> : item.type === 'image' && media ? <div className="layer-image-frame"><img src={mediaUrl(media.path)} alt="" draggable={false} style={imageStyle} /></div> : item.type === 'video' ? <video ref={video} playsInline crossOrigin="anonymous" aria-label="Video superpuesto" /> : null}
+      {editingCrop && geometry && <CropOverlay crop={item.crop ?? fullCrop} sourceWidth={geometry.sourceWidth} sourceHeight={geometry.sourceHeight} onNotice={onNotice}
+        onChange={(crop, group) => useProjectStore.getState().edit(p => updateOverlay(p, item.id, { crop }), group)} />}
+      {!editingCrop && <button type="button" className={`layer-hit-area ${selected ? 'selected' : ''}`} style={hitStyle} aria-label={`Mover ${item.type === 'text' ? 'texto' : item.type === 'image' ? 'imagen' : 'video superpuesto'} en la vista previa`} title="Arrastrar para mover · Alt para mover sin imán"
+        onPointerDown={begin} onPointerMove={move} onPointerUp={() => { drag.current = null; setGuides(null); }} onPointerCancel={() => { drag.current = null; setGuides(null); }} onLostPointerCapture={() => { drag.current = null; setGuides(null); }} onClick={e => { if (e.detail === 0) onSelect(item.id); }} />}
     </div>
+    {editingCrop && <span className="crop-instruction layer-crop-instruction">Original · arrastra el recuadro o sus esquinas</span>}
     {guides && <div className="preview-alignment-guides layer-guides" aria-hidden="true">{guides.x && <span className="alignment-guide vertical" />}{guides.y && <span className="alignment-guide horizontal" />}</div>}
   </>;
 }

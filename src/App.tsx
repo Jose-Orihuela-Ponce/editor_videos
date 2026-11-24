@@ -9,7 +9,6 @@ import { useSession } from './core/session';
 import Editor from './components/Editor';
 import { usePresets } from './core/presets';
 import Modal from './components/Modal';
-import AutomaticMode from './components/AutomaticMode';
 
 function Brand({ compact = false }: { compact?: boolean }) {
   return <div className="brand"><span className="brand-icon"><Clapperboard size={20} strokeWidth={2.2} /></span>{!compact && <span>editor<span className="brand-dot">.</span></span>}</div>;
@@ -24,7 +23,6 @@ function FormatArt({ orientation, small = false }: { orientation: Orientation; s
 export default function App() {
   const project = useProjectStore(s => s.project);
   const filePath = useProjectStore(s => s.filePath);
-  const dirty = useProjectStore(s => hasUnsavedChanges(s));
   const [library, setLibrary] = useState<Library>({ baseDir: '', projects: [], warnings: [] });
   const [tools, setTools] = useState<ToolStatus[]>([]);
   const [loading, setLoading] = useState(true);
@@ -32,8 +30,6 @@ export default function App() {
   const [newOrientation, setNewOrientation] = useState<Orientation | null>(null);
   const [newName, setNewName] = useState('Mi video');
   const [busy, setBusy] = useState(false);
-  const [automatic, setAutomatic] = useState(false);
-  const [automaticBusy, setAutomaticBusy] = useState(false);
   const [saving, setSaving] = useState(false);
   const savingRef = useRef(false);
   const [pendingAction, setPendingAction] = useState<(() => void) | null>(null);
@@ -130,8 +126,6 @@ export default function App() {
         <div className="nav-item active"><LayoutGrid size={18} /><span>Mis proyectos</span><span className="count">{library.projects.length}</span></div>
       </aside>
       <main className="home-main">
-        <div className="mode-selector" aria-label="Modo de trabajo"><button className={!automatic ? 'primary-button' : 'secondary-button'} disabled={automaticBusy} onClick={() => setAutomatic(false)}>Editor manual</button><button className={automatic ? 'primary-button' : 'secondary-button'} disabled={automaticBusy} onClick={() => setAutomatic(true)}>Modo automático</button></div>
-        {automatic ? <AutomaticMode onBusy={setAutomaticBusy} /> : <>
         <div className="section-label home-actions"><span>NUEVO PROYECTO</span><button className="secondary-button" onClick={() => void chooseProject()} disabled={busy}><FolderOpen size={17} />Abrir proyecto</button></div>
         <section className="format-cards" aria-label="Crear un proyecto">
           {(['horizontal', 'vertical'] as Orientation[]).map(orientation => <button key={orientation} className={`format-card ${orientation}`} onClick={() => { setNewName('Mi video'); setNewOrientation(orientation); }} disabled={busy}>
@@ -143,7 +137,6 @@ export default function App() {
           {loading ? <div className="empty-recent"><span className="loading-ring" /><p>Buscando tus proyectos…</p></div> : libraryError ? <div className="empty-recent error-state"><p>{libraryError}</p><button className="secondary-button" onClick={() => void refreshLibrary()}>Reintentar</button></div> : library.projects.length ? <div className="recent-grid">{library.projects.map(recent => <RecentCard key={recent.filePath} project={recent} disabled={busy} onOpen={() => void openProject(recent.filePath)} />)}</div> : <div className="empty-recent"><FolderOpen size={22} strokeWidth={1.3} /><p>No hay proyectos guardados.</p></div>}
           {library.warnings.length > 0 && <p className="library-warning">{library.warnings.join(' ')}</p>}
         </section>
-        </>}
         <footer className="home-footer">{engineStatus}<span title={library.baseDir}><HardDrive size={13} />{library.baseDir || 'Archivos en tu equipo'}</span></footer>
       </main>
     </div> : <Editor project={project} saving={saving} onBack={() => requestLeave(() => useProjectStore.getState().clear())} onSave={() => void saveProject()} onNotice={notify} engineStatus={engineStatus} filePath={filePath} />}

@@ -8,10 +8,16 @@
     "build": "tsc -b && vite build",
     "preview": "vite preview --host 127.0.0.1",
     "test": "vitest run",
+    "check:secrets": "node scripts/check-secrets.mjs",
+    "skills:setup": "node scripts/setup-local-skills.mjs",
+    "skills:check": "node scripts/setup-local-skills.mjs --check",
+    "doctor": "node scripts/check-environment.mjs",
+    "thumbnail:reproduce": "node scripts/reproduce-thumbnail.mjs",
     "test:media": "node scripts/create-test-media.mjs",
     "tauri": "tauri",
     "desktop": "tauri dev",
     "sidecars": "node scripts/prepare-sidecars.mjs",
+    "automatic:process": "node scripts/process-link.mjs",
     "automatic:setup": "node scripts/prepare-automatic.mjs"
   },
   "dependencies": {

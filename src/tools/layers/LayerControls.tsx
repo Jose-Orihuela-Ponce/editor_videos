@@ -1,4 +1,7 @@
 import { useRef } from 'react';
+import { Crop } from 'lucide-react';
+import CropFields from '../crop/CropFields';
+import { fullCrop } from '../../core/project';
 import type { AudioClip, Overlay, Project, TextStyle } from '../../core/project';
 import { moveLayer, updateAudio, updateOverlay } from '../../core/layers';
 import { useProjectStore } from '../../core/store';
@@ -7,8 +10,12 @@ import NumberField from '../NumberField';
 import { fittedTextValue } from '../text/fit';
 import { showFitGuide, useSession } from '../../core/session';
 
-interface Props { project: Project; item: Overlay | AudioClip; onNotice: (message: string, error?: boolean) => void }
-export default function LayerControls({ project, item, onNotice }: Props) {
+interface Props {
+  project: Project; item: Overlay | AudioClip;
+  onNotice: (message: string, error?: boolean) => void;
+  cropEditing: boolean; onCropToggle: () => void;
+}
+export default function LayerControls({ project, item, onNotice, cropEditing, onCropToggle }: Props) {
   const visual = 'type' in item ? item : undefined, audio = visual ? undefined : item as AudioClip;
   const group = useRef('');
   const update = (patch: Partial<Overlay> | Partial<AudioClip>, editGroup?: string) => {
@@ -25,6 +32,7 @@ export default function LayerControls({ project, item, onNotice }: Props) {
     catch (error) { onNotice(error instanceof Error ? error.message : String(error), true); return false; }
   };
   const style = visual?.style;
+  const image = visual?.type === 'image' ? project.media.find(media => media.id === visual.mediaId) : undefined;
   const styleChange = (patch: Partial<TextStyle>, editGroup?: string) => style && update({ style: { ...style, ...patch } }, editGroup);
   const backgroundEnabled = style?.bgEnabled ?? ((style?.bgOpacity ?? 0) > 0);
   const currentDuration = visual ? visual.duration : clipDuration(audio!);
@@ -47,6 +55,8 @@ export default function LayerControls({ project, item, onNotice }: Props) {
     </section></details><details className="clip-tool-group"><summary>Letra y formato</summary><section className="clip-tool-section">
       <label className="field-label">Letra<select className="text-input" aria-label="Letra" value={style.font} onChange={e => styleChange({ font: e.target.value })}>{['Montserrat', 'Segoe UI', 'Arial', 'Verdana', 'Tahoma', 'Georgia', 'Times New Roman', 'Courier New'].map(font => <option key={font} value={font}>{font}</option>)}</select></label>
       <NumberField label="Tamaño de letra" unit="px" value={style.size} min={8} max={500} precision={0} slider onNotice={onNotice} onChange={(size, g, source) => !!styleChange({ size: snappedValue(size, 'size', source) }, g)} />
+      <NumberField label="Espaciado entre letras" unit="%" value={style.letterSpacing ?? 0} min={-30} max={100} precision={0} slider onNotice={onNotice} onChange={(letterSpacing, g) => !!styleChange({ letterSpacing }, g)} />
+      <NumberField label="Interlineado" unit="%" value={(style.lineHeight ?? 1.2) * 100} min={50} max={300} precision={0} slider onNotice={onNotice} onChange={(value, g) => !!styleChange({ lineHeight: value / 100 }, g)} />
       <div className="text-design" aria-label="Diseño"><label className="tool-checkbox"><input type="checkbox" checked={!!style.bold} onChange={e => styleChange({ bold: e.target.checked })} />Negrita</label><label className="tool-checkbox"><input type="checkbox" checked={!!style.italic} onChange={e => styleChange({ italic: e.target.checked })} />Cursiva</label><label className="tool-checkbox"><input type="checkbox" checked={!!style.underline} onChange={e => styleChange({ underline: e.target.checked })} />Subrayado</label></div>
       <NumberField label="Opacidad" unit="%" value={(style.opacity ?? 1) * 100} min={0} max={100} precision={0} slider onNotice={onNotice} onChange={(value, g) => !!styleChange({ opacity: value / 100 }, g)} />
       <div className="layer-colors"><label>Color<input aria-label="Color del texto" type="color" value={style.color} onChange={e => styleChange({ color: e.target.value })} /></label></div>
@@ -55,6 +65,12 @@ export default function LayerControls({ project, item, onNotice }: Props) {
       <label className="tool-checkbox"><input type="checkbox" checked={backgroundEnabled} onChange={e => styleChange({ bgEnabled: e.target.checked, ...(e.target.checked && !style.bgColor ? { bgColor: '#000000' } : {}), ...(e.target.checked && style.bgEnabled === undefined && !(style.bgOpacity ?? 0) ? { bgOpacity: 0.5 } : {}) })} />Fondo</label>
       {backgroundEnabled && <><div className="layer-colors"><label>Color del fondo<input aria-label="Color del fondo" type="color" value={style.bgColor ?? '#000000'} onChange={e => styleChange({ bgColor: e.target.value })} /></label></div><NumberField label="Opacidad del fondo" unit="%" value={(style.bgOpacity ?? 0) * 100} min={0} max={100} precision={0} slider onNotice={onNotice} onChange={(value, g) => !!styleChange({ bgOpacity: value / 100 }, g)} /></>}
     </section></details></>}
+    {image && visual && <details className="clip-tool-group"><summary>Recorte de imagen</summary><section className="clip-tool-section">
+      <button className={`tool-crop-toggle ${cropEditing ? 'active' : ''}`} type="button" aria-pressed={cropEditing} onClick={onCropToggle}><Crop size={14} />{cropEditing ? 'Terminar recorte' : 'Editar sobre la vista previa'}</button>
+      <CropFields crop={visual.crop ?? fullCrop} minWidth={Math.min(1, 2 / (image.w || project.canvas.w))} minHeight={Math.min(1, 2 / (image.h || project.canvas.h))}
+        onNotice={onNotice} onChange={(crop, g) => update({ crop }, g)} />
+      {visual.crop && <button className="secondary-button" type="button" onClick={() => update({ crop: undefined })}>Restablecer recorte</button>}
+    </section></details>}
     <details className="clip-tool-group"><summary>Tiempo y pista</summary><section className="clip-tool-section">
       <div className="tool-field-pair">
         <NumberField label="Inicio" unit="s" value={item.start} min={0} max={100000000} step={0.1} onNotice={onNotice} onChange={(value, g) => move(value, item.track ?? 0, g)} />

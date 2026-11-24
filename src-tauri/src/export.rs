@@ -433,8 +433,14 @@ pub fn render(
                 "+faststart",
             ]);
         }
+        // Leave room for the final video frame when the timeline ends within it.
+        let output_duration = if options.format == "mp4" {
+            (plan.duration * plan.fps - 1e-8).ceil().max(1.0) / plan.fps
+        } else {
+            plan.duration
+        };
         command
-            .args(["-t", &format!("{:.9}", plan.duration)])
+            .args(["-t", &format!("{output_duration:.9}")])
             .arg(&files.partial)
             .stdout(Stdio::piped())
             .stderr(Stdio::piped());
@@ -658,6 +664,45 @@ mod tests {
             .iter()
             .any(|p| p.stage == "Reintentando por CPU"));
         assert_eq!(events.lock().unwrap().last().unwrap().percent, 100.0);
+    }
+
+    #[test]
+    fn mp4_keeps_the_last_frame_when_duration_ends_inside_it() {
+        let (folder, ffmpeg, mut project, mut plan, mut options) = fixture();
+        project.main[0].src_end = 0.13;
+        plan.duration = 0.13;
+        plan.fps = 24.0;
+        plan.graph = "color=c=red:s=320x180:r=24,trim=end_frame=4[vout];anullsrc=r=48000:cl=stereo,atrim=duration=0.13[aout]".into();
+        options.hardware = false;
+        let result = render(
+            &folder.0,
+            &ffmpeg,
+            &project,
+            &plan,
+            &options,
+            &uuid::Uuid::new_v4().to_string(),
+            Arc::new(AtomicBool::new(false)),
+            &[],
+            Arc::new(|_| {}),
+        )
+        .unwrap();
+        let ffprobe = ffmpeg.with_file_name("ffprobe-x86_64-pc-windows-msvc.exe");
+        let info = media::command(&ffprobe)
+            .args([
+                "-v",
+                "error",
+                "-select_streams",
+                "v:0",
+                "-show_entries",
+                "stream=nb_frames",
+                "-of",
+                "csv=p=0",
+            ])
+            .arg(result.path.unwrap())
+            .output()
+            .unwrap();
+        assert!(info.status.success());
+        assert_eq!(String::from_utf8_lossy(&info.stdout).trim(), "4");
     }
 
     #[test]

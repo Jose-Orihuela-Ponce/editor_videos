@@ -4,6 +4,8 @@ Editor local de video para Windows. Estado y siguiente paso: **[AVANCE.md](AVANC
 
 Implementadas las etapas 1 (base), 2 (edición básica), 3 (transformaciones), 4 (capas), 5 (estilos) y 6 (pulido).
 
+Para actualizar una PC que aún conserva Manual/Automático, seguir [INSTALACION_EN_OTRA_PC.md](INSTALACION_EN_OTRA_PC.md). Incluye las dos skills propias, preparación del entorno, una copia limpia de «Mi estilo» y la migración al ejecutable nuevo. [PRUEBA_DE_REPRODUCCION.md](PRUEBA_DE_REPRODUCCION.md) permite al otro agente repetir los ejemplos aprobados desde URLs, generar imágenes nuevas y documentar diferencias; los videos completos quedan fuera de Git.
+
 ## Repositorio y GitHub
 
 Remoto `origin`: [Jose-Orihuela-Ponce/editor_videos](https://github.com/Jose-Orihuela-Ponce/editor_videos). Rama principal: `main`.
@@ -17,7 +19,9 @@ cd editor_videos
 
 Después sigue los requisitos y comandos de desarrollo de abajo. Git conserva ambos archivos de bloqueo y los recursos de la aplicación. El `.gitignore` excluye dependencias, compilaciones, instaladores, ejecutables de FFmpeg/FFprobe, pruebas locales en `.local/` y archivos `.env` privados. Guarda los medios de prueba y las exportaciones dentro de `.local/` si trabajas en el repositorio. No añadas credenciales ni archivos personales con `git add -f`.
 
-GitHub Actions ejecuta pruebas de interfaz y exportación con FFmpeg, compilación web y pruebas de Rust en Windows. No genera ni publica instaladores. La comprobación en GitHub se verifica después de subir el workflow; no sustituye las pruebas de la aplicación Tauri.
+Antes de preparar una subida, ejecuta `npm run check:secrets -- --history`. Revisa archivos publicables, el índice y el historial sin mostrar valores. Las muestras originales de `references/thumbnails/ejemplo_*/` y los archivos de video y audio quedan fuera de Git; las dos imágenes aprobadas de la skill sí se conservan. Consulta [SEGURIDAD.md](SEGURIDAD.md) para configurar Drive y revisar secretos.
+
+GitHub Actions revisa secretos en archivos e historial y ejecuta pruebas de interfaz y exportación con FFmpeg, compilación web y pruebas de Rust en Windows. No usa credenciales de Drive ni genera o publica instaladores. Su resultado se comprueba después de subir el workflow; no sustituye las pruebas de la aplicación Tauri.
 
 El código propio no tiene todavía una licencia de distribución declarada. Montserrat conserva su licencia en `public/fonts/OFL.txt`; antes de distribuir instaladores con FFmpeg, revisa también las condiciones de la compilación utilizada (la actual incluye componentes GPL).
 
@@ -29,6 +33,7 @@ Requisitos: Windows 10/11 x64, Node.js 22.12+ o 24+, Rust (destino `x86_64-pc-wi
 npm ci
 npm run sidecars
 npm run automatic:setup
+npm run skills:setup
 npm run desktop
 ```
 
@@ -38,11 +43,11 @@ Para conservar los mismos códecs que la versión local, utiliza la compilación
 
 Para una versión compilada, prepara las dependencias anteriores y ejecuta `npx tauri build --bundles nsis`. Instala el archivo generado en `src-tauri/target/release/bundle/nsis/`; incluye FFmpeg y FFprobe. El código descargado de GitHub requiere estos pasos de compilación: el repositorio no contiene un instalador listo para ejecutar.
 
-Tus proyectos y estilos son independientes del código: para trasladarlos, copia tu carpeta de datos configurada (`datos/` en este equipo) y los medios originales al otro equipo. Si cambian las rutas, usa **Localizar** y vuelve a guardar. Copia también tus exportaciones si las necesitas; GitHub no almacena esos datos personales.
+Tus proyectos y estilos son independientes del código: para trasladarlos, copia tu carpeta de datos efectiva (consulta `node scripts/process-link.mjs --paths`) y los medios originales al otro equipo. Si cambian las rutas, usa **Localizar** y vuelve a guardar. Copia también tus exportaciones si las necesitas; GitHub no almacena esos datos personales.
 
 ## Instalador de Windows
 
-El ejecutable instalado está actualizado. El instalador antiguo se retiró durante la limpieza porque no incluía las últimas correcciones ni la reubicación de datos. Para generar uno actual, prepara las dependencias y ejecuta el comando siguiente. Al reinstalar en este equipo, conserva los argumentos `--data-dir` y `--downloads-dir` del acceso directo. Si falta WebView2, el instalador puede necesitar conexión para obtenerlo.
+Compila desde el código actual antes de distribuir un instalador o utilizar el procesamiento por comando en otro equipo. Conserva los argumentos `--data-dir` y `--downloads-dir` de tus accesos directos si usan rutas personalizadas. Si falta WebView2, el instalador puede necesitar conexión para obtenerlo.
 
 Para volver a generarlo en Windows con las dependencias preparadas:
 
@@ -50,34 +55,126 @@ Para volver a generarlo en Windows con las dependencias preparadas:
 npx tauri build --bundles nsis
 ```
 
-## Modo automático de YouTube
+## Editor manual y flujo de producción
 
-En el inicio, selecciona **Modo automático**, pega un enlace de un video de YouTube, escribe el **Nombre del proyecto**, elige orientación y calidad, y pulsa **Procesar**. El nombre queda bloqueado durante el trabajo y se usa para el MP4; si lo dejas vacío, se usa el título de YouTube. Primero guarda un estilo de esa orientación en el editor manual. El proceso descarga el original, aplica el mismo estilo (video y textos) y exporta un MP4 sin abrir la línea de tiempo. La salida usa la resolución Original del editor, sin aumento artificial, y conserva sus reglas de FPS y audio.
+La aplicación del escritorio abre el editor manual para crear proyectos, editar y guardar estilos. El procesamiento por enlace se inicia desde el chat o por comando y reutiliza el motor de edición. El código del flujo está en `src/production/` y `src-tauri/src/production/`. Los estilos y sus reglas compartidas están en `src/core/styles.ts`; el estado de la interfaz está en `src/core/presets.ts`.
 
-La descarga admite 1080p con alternativa 720p, o preferencia 720p; también mide la calidad por el lado menor en videos verticales. Si no hay 1080p/720p, descarga la mejor resolución inferior disponible, conservando sus dimensiones reales. Se admite un video por trabajo, incluidos enlaces `youtu.be` y Shorts; se descartan parámetros de listas. No incluye directos en curso, acceso mediante cuentas/cookies, otros sitios, lotes ni ejecución por script.
+El flujo descarga un video de YouTube, aplica el estilo guardado y exporta un MP4. Admite 1080p con alternativa 720p, preferencia 720p o la mejor resolución inferior disponible, conservando sus dimensiones. Los originales se conservan en `Videos/ediciones/descargas/<id>/`, con `descarga.json`; las rutas se pueden configurar. Al cancelar se limpian los parciales y se conserva un original completo.
 
-Puedes cancelar la descarga o la exportación. Los parciales de descarga se eliminan; un original ya descargado se conserva en `Videos/ediciones/descargas/<id>/` con `descarga.json` y sin borrarse al usar «Procesar otro». Para pruebas, `EDITOR_DATA_DIR` aísla también las descargas; `EDITOR_DOWNLOAD_DIR` permite indicar otra carpeta. La exportación va a `Videos/ediciones/` o a la carpeta elegida; nunca sobrescribe resultados. Al terminar aparece **Procesar otro**: limpia enlace, nombre y avisos del trabajo anterior, sin iniciar una descarga ni borrar archivos. Orientación, calidad y carpeta se conservan y se recuerdan en el almacenamiento local de la interfaz.
+`npm run automatic:setup` prepara yt-dlp y Node.js como sidecars, con sus licencias. Ejecuta este paso antes de compilar. Para actualizar el soporte de YouTube, vuelve a preparar las dependencias y recompila.
 
-`npm run automatic:setup` descarga el ejecutable oficial de yt-dlp, verifica su SHA-256, copia Node.js desde el entorno de compilación e incluye sus licencias. Se incluyen ambos como sidecars, sin requerir Python o Node instalados en el equipo de destino. Puedes fijar una versión con `YTDLP_VERSION`; se registra en `src-tauri/binaries/AUTOMATIC-SOURCES.json`. Ejecuta este paso antes de compilar también si copias FFmpeg manualmente. Para actualizar el soporte de YouTube, vuelve a preparar las dependencias y recompila la app. Referencia: [documentación oficial de yt-dlp](https://github.com/yt-dlp/yt-dlp#installation).
+## Procesar desde un enlace por comando
 
-## Almacenamiento en este equipo
+El flujo de producción admite trabajos iniciados desde el chat o la terminal. El script abre una instancia oculta de Tauri, prepara los textos con WebView2, descarga y exporta el MP4. Cada instancia tiene un perfil WebView2 propio. Se requiere Windows con sesión disponible y la compilación actualizada del editor con sus cuatro sidecars.
 
-Datos, proyectos, estilos, caché y preferencias de WebView2: `C:/Users/jose/Desktop/workspace/editor_videos/datos/`, excluido de Git. MP4 finales en `C:/Users/jose/Videos/ediciones/` y originales descargados en `ediciones/descargas/<id>/`. El acceso directo configura `--data-dir` y `--downloads-dir`; debe conservar esos argumentos al reinstalar. Sin configuración de ruta, otras instalaciones mantienen Documentos/Editor como ubicación compatible.
+Para consultar los estilos de la carpeta de datos habitual:
 
-## Almacenamiento de proyectos
+```powershell
+node scripts/process-link.mjs --list-styles --orientation horizontal
+```
 
-En este equipo: `editor_videos/datos/Proyectos/`. Otras instalaciones sin ruta configurada usan `Documentos/Editor/Proyectos/`. Un proyecto nuevo queda en memoria hasta pulsar **Guardar** o **Ctrl+S**. Cada carpeta contiene `proyecto.json`, su copia anterior `.bak` y `cache/`. Los medios originales se referencian por ruta; no se copian ni modifican. Las miniaturas regenerables se guardan en `Editor/cache/media/`, también para proyectos aún sin guardar.
+Para procesar un enlace con un estilo guardado:
 
-Para una prueba aislada, en la misma terminal antes de iniciar:
+```powershell
+node scripts/process-link.mjs --url "https://youtu.be/ID_DEL_VIDEO" --style "Mi estilo" --reference "Keiko Fujimori" --orientation horizontal
+```
+
+El estilo se elige por nombre exacto o identificador y se lee de la misma carpeta de datos que utiliza el editor. Esta primera fase descarga el video, aplica los ajustes y textos guardados en el estilo y entrega el MP4. El archivo recibe un nombre automático basado en el video original. El texto de miniatura y el título de publicación pertenecen a fases posteriores. `--quality 720` cambia la preferencia de descarga y `--cpu` desactiva la aceleración. `--output`, `--data-dir` y `--downloads-dir` permiten indicar carpetas. Se respetan también `EDITOR_DATA_DIR` y `EDITOR_DOWNLOAD_DIR`. `--executable` selecciona una compilación instalada en otra ruta. Sin ese argumento, el script busca la compilación local y prioriza `editor-video-ligero-automatico.exe`.
+
+Cada ejecución escribe `request.json`, `status.json` y `result.json` en `Produccion/Trabajos/<id>/` bajo la carpeta de datos del editor. La instancia oculta guarda su perfil WebView2 dentro de esa carpeta de trabajo. El script informa la carpeta y el progreso en stderr y entrega un JSON final en stdout. El resultado incluye la ruta del MP4, la del original y el estilo utilizado. El MP4 se guarda por defecto en la misma carpeta del editor manual, `Videos/ediciones/`. El módulo de Drive recibe ese archivo terminado; queda pendiente de credenciales hasta configurar el acceso. Los códigos de salida son 0 para completado, 1 para error y 2 para cancelado. El resultado se conserva para consultarlo al volver al chat.
+
+Para consultar las carpetas efectivas, incluidas las rutas personalizadas:
+
+```powershell
+node scripts/process-link.mjs --paths
+```
+
+Ctrl+C solicita cancelación y espera la limpieza. Desde otra terminal también se puede usar:
+
+```powershell
+node scripts/process-link.mjs --cancel "RUTA_DE_LA_CARPETA_DEL_TRABAJO"
+```
+
+## Entrega en Google Drive
+
+Al iniciar un trabajo desde el chat, se pide el nombre corto de referencia si aún falta. `--reference` guarda ese dato por separado del texto de miniatura y del título de publicación. El flujo utilizará esta organización:
+
+```text
+Ediciones/
+  Keiko Fujimori/
+    video.mp4
+    miniatura.png
+```
+
+Cada trabajo tiene su propia subcarpeta. Si se repite el nombre en un trabajo distinto, se crea otra subcarpeta con ese nombre. Los registros JSON se guardan en el equipo. El título corregido se entrega en el chat.
+
+Las credenciales locales de acceso se guardan en `.env`, que está excluido de Git. `.env.example` conserva la plantilla:
+
+```dotenv
+GOOGLE_DRIVE_CLIENT_ID=
+GOOGLE_DRIVE_CLIENT_SECRET=
+GOOGLE_DRIVE_REFRESH_TOKEN=
+GOOGLE_DRIVE_EDICIONES_FOLDER_ID=
+```
+
+Se utiliza OAuth de una aplicación de escritorio con Drive API habilitada. Descarga su JSON dentro de `.local/credentials/` y ejecuta:
+
+```powershell
+node scripts/authorize-drive.mjs --credentials ".local/credentials/desktop-client.json"
+```
+
+El helper importa el cliente, solicita acceso sin conexión con el permiso `https://www.googleapis.com/auth/drive.file` y guarda la autorización en `.env`. Completa personalmente el consentimiento en el navegador del mismo equipo. No compartas el JSON, `.env` ni la URL temporal de autorización. El identificador de Ediciones es opcional y permite elegir una carpeta ya accesible para esa autorización. Si queda vacío, el módulo encuentra o crea Ediciones en Mi unidad. [Autorización de aplicaciones de escritorio](https://developers.google.com/identity/protocols/oauth2/native-app).
+
+Cuando los tres valores de acceso están completos, el comando de procesamiento ejecuta la entrega tras generar el MP4. Si faltan, conserva el video local y registra `drive.state = pending_credentials`. El estado superior del resultado corresponde a la edición, y el campo `drive` indica el estado de la entrega. La conexión real, la carga del MP4 y la miniatura, y la descarga móvil se validaron el 23 de noviembre de 2026.
+
+**Decisión del 23 de noviembre: continuar temporalmente en modo Pruebas.** En una app externa con acceso a Drive, el refresh token de ese modo caduca a los siete días desde el consentimiento. Reautoriza con el helper y reintenta la subida del trabajo existente; el MP4 se conserva. El usuario pasará a producción más adelante y volverá a autorizar. El estado de Google Console aún no se ha vuelto a comprobar. [Caducidad de tokens](https://developers.google.com/identity/protocols/oauth2#expiration).
+
+Para reintentar la entrega del mismo trabajo:
+
+```powershell
+node scripts/upload-drive.mjs --job "CARPETA_DEL_TRABAJO"
+```
+
+Para añadir posteriormente la miniatura:
+
+```powershell
+node scripts/upload-drive.mjs --job "CARPETA_DEL_TRABAJO" --thumbnail "C:/ruta/miniatura.png"
+```
+
+La subida conserva los identificadores de carpeta y archivos, permite reanudar transferencias interrumpidas y verifica tamaño y MD5 contra el archivo local antes de marcar `verified`. Los reintentos actualizan los archivos del mismo trabajo. La disponibilidad de la reproducción de video en Drive puede requerir procesamiento adicional. Ctrl+C solicita cancelar la transferencia. [Cargas reanudables](https://developers.google.com/workspace/drive/api/guides/manage-uploads).
+
+## Corrección de títulos
+
+La skill `corregir-textos`, incluida en `skills/corregir-textos/`, corrige ortografía, gramática, sintaxis y puntuación. `npm run skills:setup` la habilita junto con `crear-miniaturas` en el repositorio del otro equipo; `skills:check` detecta copias pendientes de actualizar. En títulos de actualidad política toma el contexto peruano y verifica grafías dudosas de figuras públicas. Entrega directamente el texto corregido, respetando la idea y redacción del usuario.
+
+## Miniaturas y prueba real
+
+La skill personal `crear-miniaturas`, con fuente en `skills/crear-miniaturas/`, explora el original, propone capturas con IDs y tiempos, admite nuevas rondas y compone con el texto y las referencias del usuario. Contiene dos diseños aprobados y un extractor reutilizable. Funciona por conversación, independiente del render del MP4.
+
+La prueba real completó MP4 editado, miniatura aprobada y título corregido; ambos archivos se subieron a Drive y el usuario confirmó la descarga al teléfono y aprobó el resultado. La [guía de producción](Flujo%20automatico%20de%20enlace%20a%20video%20editado.md) explica cómo operar y reintentar; las rutas, identificadores y enlaces de entregas reales permanecen en registros locales excluidos de Git.
+
+## Almacenamiento
+
+Por defecto se usan estas ubicaciones:
+
+- Proyectos y estilos compartidos en `Documentos/Editor/Proyectos/` y `Documentos/Editor/Preajustes/`.
+- Registros de producción en `Documentos/Editor/Produccion/Trabajos/<id>/`.
+- MP4 terminados en `Videos/ediciones/`, tanto en edición manual como automática.
+- Originales descargados en `Videos/ediciones/descargas/<id>/`.
+- Caché de medios del editor en `Documentos/Editor/cache/`.
+
+`--data-dir` o `EDITOR_DATA_DIR` configuran la carpeta de datos para ambos modos. Los accesos directos con rutas personalizadas deben conservar sus argumentos. `--downloads-dir` o `EDITOR_DOWNLOAD_DIR` configuran los originales. El destino final se puede elegir al exportar manualmente o con `--output` en producción.
+
+Un proyecto nuevo queda en memoria hasta guardar. Su carpeta contiene `proyecto.json` y la copia `.bak`. Los medios se referencian por ruta. La aplicación permite localizar archivos movidos.
+
+Para una prueba aislada:
 
 ```powershell
 $env:EDITOR_DATA_DIR = Join-Path (Get-Location) '.local/demo-data'
-npm run desktop
+node scripts/process-link.mjs --paths
 ```
 
-Para volver a la carpeta normal, abre otra terminal o ejecuta `Remove-Item Env:EDITOR_DATA_DIR`.
-
-Las exportaciones van por defecto a **Videos/ediciones del usuario** (`C:/Users/jose/Videos/ediciones/` en este equipo). La ventana de exportación muestra la ruta completa y permite elegir otra carpeta. `EDITOR_DATA_DIR` cambia los datos del proyecto, no este destino; en pruebas aisladas elige explícitamente una carpeta de salida dentro de `.local/`.
+En ese caso, las descargas quedan bajo los datos aislados. Para aislar también el MP4, usa `--output` con una carpeta de prueba. Las carpetas reales pueden consultarse con `--paths`.
 
 ## Archivos movidos y atajos
 
@@ -87,19 +184,24 @@ Espacio reproduce o pausa; S divide; Supr elimina; Ctrl+S guarda; Ctrl+Z y Ctrl+
 
 ## Estilos
 
-Selecciona un video de la pista principal y pulsa **Guardar estilo** en la barra superior. Se guardan sus ajustes de encuadre, velocidad y volumen, y los textos que aparecen durante ese video: palabras, formato, posición, escala y tiempo. Cada orientación tiene su propio estilo. También puedes guardar mientras está seleccionado un texto que aparece sobre el video.
+Selecciona un video de la pista principal y pulsa **Guardar estilo** en la barra superior. Se guardan sus ajustes de encuadre, velocidad y volumen, y los textos que aparecen durante ese video: palabras, formato, posición, escala y tiempo. Elige **Nuevo estilo** y escribe un nombre, o selecciona un estilo existente para reemplazarlo. Cada orientación tiene su propia lista. También puedes guardar mientras está seleccionado un texto que aparece sobre el video.
 
-Selecciona otro video y pulsa **Aplicar estilo**: se aplican los ajustes del video y se añaden copias de los textos, sin eliminar los que ya había. Los textos que excedan el final del video se recortan en la nueva copia; si se selecciona un texto, se aplica a ese texto el contenido, formato y posición del primer texto guardado. La operación se puede deshacer y rehacer. Los cortes del video seleccionado se conservan.
+Selecciona otro video, pulsa **Aplicar estilo** y elige el estilo guardado. Se aplican los ajustes del video y se añaden copias de los textos, sin eliminar los que ya había. Los textos que excedan el final del video se recortan en la nueva copia; si se selecciona un texto, se aplica a ese texto el contenido, formato y posición del primer texto guardado. La operación se puede deshacer y rehacer. Los cortes del video seleccionado se conservan.
 
-**Restablecer**, **Copiar** y **Pegar** siguen disponibles en el panel del clip o texto. Los estilos se guardan en `datos/Preajustes/horizontal.json` y `vertical.json` en este equipo, o bajo la carpeta de datos configurada. Los videos superpuestos no admiten todos los ajustes del video principal y no pueden recibir el estilo completo.
+**Restablecer**, **Copiar** y **Pegar** siguen disponibles en el panel del clip o texto. Los estilos se guardan en `Preajustes/horizontal.styles.json` y `Preajustes/vertical.styles.json` bajo la carpeta de datos configurada. Los estilos anteriores aparecen como **Mi estilo**. Los videos superpuestos no admiten todos los ajustes del video principal y no pueden recibir el estilo completo.
 
 ## Comprobar
 
 ```powershell
+npm run check:secrets -- --history
 npm test
 npm run build
-cargo test --offline --manifest-path src-tauri/Cargo.toml --lib
+cargo test --locked --manifest-path src-tauri/Cargo.toml --lib
 ```
+
+Puedes añadir `--offline` a Cargo cuando las dependencias ya estén descargadas. La compilación de TypeScript rechaza variables y parámetros sin uso.
+
+Las incidencias conocidas pendientes de revisión manual están en `AVANCE.md`. Esta preparación para GitHub no equivale a una nueva validación visual en Tauri ni a un instalador recién compilado.
 
 `npm run dev` solo muestra la interfaz en un navegador: **no tiene acceso a los proyectos del disco**. Usa `npm run desktop` para importar, reproducir, guardar y exportar.
 

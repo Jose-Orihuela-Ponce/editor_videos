@@ -13,10 +13,14 @@ src-tauri/icons/*.icns
 
 # Datos y pruebas locales (no incluir originales ni exportaciones)
 .local/
+# Adjuntos privados de las conversaciones; las referencias aprobadas van en skills/
+/.codex-attachments/
 datos/
 coverage/
 playwright-report/
 test-results/
+# Copias locales descubiertas por Codex; fuente mantenida en skills/
+/.agents/skills/
 
 # Variables privadas y credenciales locales
 .env
@@ -26,6 +30,30 @@ test-results/
 *.key
 *.p12
 *.pfx
+client_secret*.json
+credentials*.json
+service-account*.json
+service_account*.json
+token.json
+tokens.json
+.npmrc
+.pypirc
+
+# Originales de referencia: conservar en el equipo, publicar solo assets aprobados
+/references/thumbnails/ejemplo_*/
+*.mp4
+*.mkv
+*.mov
+*.webm
+*.avi
+*.mp3
+*.wav
+*.m4a
+*.zip
+*.7z
+*.bak
+__pycache__/
+*.pyc
 
 # Archivos del sistema y del editor de código
 .DS_Store

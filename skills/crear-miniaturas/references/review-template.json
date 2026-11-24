@@ -1,0 +1,18 @@
+{
+  "status": "pending",
+  "generatedImage": null,
+  "environment": { "commit": null, "imageTool": null, "sourceVideo": null },
+  "checks": {
+    "selectedPeopleAndClothesPreserved": null,
+    "headAngleGazeAndExpressionPreserved": null,
+    "circleIdentityAndSourceClothesCorrect": null,
+    "exactTextAccentsAndQuotationMarks": null,
+    "phoneLegibilityAndSafeMargins": null,
+    "blueStudioCircleArrowAndSoftGradient": null,
+    "broadcastBrandingRemoved": null
+  },
+  "differences": [],
+  "changesApplied": [],
+  "humanApproved": false,
+  "notes": "El agente completa las comprobaciones después de inspeccionar el resultado real. pass técnico no equivale a aprobación del usuario."
+}

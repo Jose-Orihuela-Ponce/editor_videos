@@ -1,4 +1,5 @@
 import type { Media, Project } from './project';
+import { validateImageCrop } from './layerGeometry';
 import { validateGeometry } from './geometry';
 
 /** Keep timeline IDs and edits; reject a replacement that cannot cover the used source ranges. */
@@ -13,5 +14,8 @@ export function relinkMedia(project: Project, id: string, replacement: Media) {
   if (replacement.duration + 1e-6 < required) throw new Error('El archivo elegido es demasiado corto para los cortes usados en el proyecto.');
   if ((audio.length || (original.hasAudio && (clips.length || videos.length))) && !replacement.hasAudio) throw new Error('El archivo elegido no contiene el audio que usa el proyecto.');
   for (const clip of clips) validateGeometry(replacement, project.canvas, clip);
+  for (const layer of project.overlays) {
+    if (layer.type === 'image' && layer.mediaId === id && layer.crop) validateImageCrop(layer.crop, replacement, project.canvas);
+  }
   Object.assign(original, { ...replacement, id: original.id, relPath: undefined });
 }
